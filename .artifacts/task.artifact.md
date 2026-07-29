@@ -1,8 +1,9 @@
-# Tasks - Admin User Management & Password Visibility
+# Tasks - Excel Upload for Finance
 
-- [ ] Update `LeaderboardEntryModel` with `password` field
-- [ ] Update `LeaderboardScreen` mock data with passwords
-- [ ] Make "USERS" badge clickable for Admins to view all passwords
-- [ ] Update `_addUser()` dialog to include a password field
+- [ ] Add `file_picker` dependency to `pubspec.yaml`
+- [ ] Implement `_pickExcelFile` in `FinancialManagementScreen`
+- [ ] Add "UPLOAD EXCEL" button to `FinancialManagementScreen` UI
+- [ ] Implement `_pickExcelFile` in `WorkerFinanceScreen`
+- [ ] Add "UPLOAD EXCEL" button to `WorkerFinanceScreen` UI
 - [ ] Verify functionality
 - [ ] Create walkthrough

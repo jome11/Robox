@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/robox_button.dart';
@@ -94,6 +95,25 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
     });
   }
 
+  Future<void> _pickExcelFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['xlsx', 'xls'],
+    );
+
+    if (result != null) {
+      final fileName = result.files.single.name;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Excel file selected: $fileName'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    }
+  }
+
   void _updateTransactionDescription(String id, String newDescription) {
     setState(() {
       final index = _transactions.indexWhere((t) => t.id == id);
@@ -179,7 +199,21 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
             _StyledField(controller: _descriptionController, hint: 'Enter transaction details...', maxLines: 3),
             const SizedBox(height: 16),
 
-            RoboxButton(label: 'Log Transaction', onPressed: _logEntry),
+            Row(
+              children: [
+                Expanded(
+                  child: RoboxButton(label: 'Log Transaction', onPressed: _logEntry),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: RoboxButton(
+                    label: 'UPLOAD EXCEL',
+                    onPressed: _pickExcelFile,
+                    isSecondary: true,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 24),
 
             Text('RECENT TRANSACTIONS', style: AppTextStyles.label),
