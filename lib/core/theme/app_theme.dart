@@ -3,12 +3,12 @@ import 'app_colors.dart';
 import 'app_text_styles.dart';
 
 class AppTheme {
-  static ThemeData get darkTheme {
+  static ThemeData get lightTheme {
     return ThemeData(
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.primary,
-      colorScheme: const ColorScheme.dark(
+      colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         onPrimary: AppColors.onPrimary,
         secondary: AppColors.secondary,
@@ -26,6 +26,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         labelStyle: AppTextStyles.body.copyWith(color: AppColors.textMuted),
         hintStyle: AppTextStyles.body.copyWith(color: AppColors.textMuted),
+        filled: true,
+        fillColor: AppColors.surface,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.border),

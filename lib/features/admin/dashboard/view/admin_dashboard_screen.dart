@@ -3,7 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/robox_button.dart';
-import '../../../../core/widgets/stat_card.dart';
+import '../../../../core/widgets/stat_strip.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -21,15 +21,11 @@ class AdminDashboardScreen extends StatelessWidget {
             Text('Team and business overview', style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
             const SizedBox(height: 20),
 
-            Row(
-              children: const [
-                Expanded(child: StatCard(value: '12', label: 'Active Tasks', valueColor: AppColors.primary)),
-                SizedBox(width: 12),
-                Expanded(child: StatCard(value: '91%', label: 'Team Efficiency', valueColor: AppColors.secondary)),
-                SizedBox(width: 12),
-                Expanded(child: StatCard(value: '6', label: 'Workers', valueColor: AppColors.warning)),
-              ],
-            ),
+            const StatStrip(items: [
+              StatStripItem(value: '12', label: 'Active Tasks', icon: Icons.assignment_outlined, accentColor: AppColors.primary),
+              StatStripItem(value: '91%', label: 'Team Efficiency', icon: Icons.bolt_outlined, accentColor: AppColors.secondary),
+              StatStripItem(value: '6', label: 'Workers', icon: Icons.groups_outlined, accentColor: AppColors.warning),
+            ]),
             const SizedBox(height: 24),
 
             Text('FINANCIAL OVERVIEW', style: AppTextStyles.label),

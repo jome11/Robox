@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/stat_card.dart';
+import '../../../../core/widgets/stat_strip.dart';
 import '../../../../core/widgets/priority_tag.dart';
 import '../../../../data/models/task_model.dart';
 import '../../../auth/bloc/auth_bloc.dart';
@@ -56,15 +56,11 @@ class WorkerDashboardScreen extends StatelessWidget {
             Text(name, style: AppTextStyles.headline),
             const SizedBox(height: 20),
 
-            Row(
-              children: const [
-                Expanded(child: StatCard(value: '38', label: 'Done', valueColor: AppColors.primary)),
-                SizedBox(width: 12),
-                Expanded(child: StatCard(value: '91%', label: 'Efficiency', valueColor: AppColors.secondary)),
-                SizedBox(width: 12),
-                Expanded(child: StatCard(value: '3', label: 'Active', valueColor: AppColors.warning)),
-              ],
-            ),
+            const StatStrip(items: [
+              StatStripItem(value: '38', label: 'Done', icon: Icons.check_circle_outline, accentColor: AppColors.primary),
+              StatStripItem(value: '91%', label: 'Efficiency', icon: Icons.bolt_outlined, accentColor: AppColors.secondary),
+              StatStripItem(value: '3', label: 'Active', icon: Icons.pending_actions_outlined, accentColor: AppColors.warning),
+            ]),
             const SizedBox(height: 24),
 
             Text('ASSIGNED TO ME', style: AppTextStyles.label),

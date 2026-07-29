@@ -19,7 +19,7 @@ class RoboxApp extends StatelessWidget {
             final user = state is AuthAuthenticated ? state.user : null;
             return MaterialApp.router(
               title: 'ROBOX',
-              theme: AppTheme.darkTheme,
+              theme: AppTheme.lightTheme,
               routerConfig: AppRouter.router(user),
               debugShowCheckedModeBanner: false,
             );

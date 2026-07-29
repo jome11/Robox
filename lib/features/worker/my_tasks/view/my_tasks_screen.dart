@@ -127,31 +127,37 @@ class _TaskCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('${(task.progress * 100).round()}% complete', style: AppTextStyles.label),
-              Wrap(
-                spacing: 6,
-                children: _steps.map((step) {
-                  final selected = task.progress >= step;
-                  return GestureDetector(
-                    onTap: () => onSetProgress(step),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: selected ? AppColors.primary : AppColors.border),
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text('${(task.progress * 100).round()}% complete', style: AppTextStyles.label),
+                Wrap(
+                  spacing: 6,
+                  children: _steps.map((step) {
+                    final selected = task.progress >= step;
+                    return GestureDetector(
+                      onTap: () => onSetProgress(step),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: selected ? AppColors.primary : AppColors.border),
+                        ),
+                        child: Text(
+                          '${(step * 100).round()}%',
+                          style: AppTextStyles.label.copyWith(color: selected ? AppColors.primary : AppColors.textMuted),
+                        ),
                       ),
-                      child: Text(
-                        '${(step * 100).round()}%',
-                        style: AppTextStyles.label.copyWith(color: selected ? AppColors.primary : AppColors.textMuted),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
           ),
         ],
       ),
