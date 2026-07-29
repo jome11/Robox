@@ -9,6 +9,7 @@ class TaskModel {
   final TaskPriority priority;
   final TaskStatus status;
   final double progress; // 0.0 to 1.0
+  final bool isGroupTask;
 
   const TaskModel({
     required this.id,
@@ -18,5 +19,6 @@ class TaskModel {
     required this.priority,
     required this.status,
     required this.progress,
+    this.isGroupTask = false,
   });
 }

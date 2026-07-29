@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/robox_button.dart';
 import '../../../../core/widgets/income_category_dropdown.dart';
 import '../../../../data/models/transaction_model.dart';
+import '../../../auth/bloc/auth_bloc.dart';
 
-/// Worker's personal earnings/expenses log — same log-entry pattern as the
-/// admin finance screen, scoped to the worker's own transactions.
+/// Worker's personal earnings/expenses log.
 class WorkerFinanceScreen extends StatefulWidget {
   const WorkerFinanceScreen({super.key});
 
@@ -29,6 +30,8 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
       type: TransactionType.income,
       date: DateTime.now().subtract(const Duration(hours: 5)),
       category: IncomeCategory.threeDPrint,
+      description: 'Payout for the successful completion of the Node 7 maintenance print job.',
+      addedBy: 'Worker Operator',
     ),
   ];
 
@@ -45,19 +48,24 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
     if (amount == null || amount <= 0) return;
     if (_type == TransactionType.income && _category == null) return;
 
+    final authState = context.read<AuthBloc>().state;
+    final userName = authState is AuthAuthenticated ? authState.user.name : 'Unknown Operator';
+
     setState(() {
       _transactions.insert(
         0,
         TransactionModel(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
-          title: _descriptionController.text.isEmpty
-              ? (_type == TransactionType.income ? 'Income entry' : 'Expense entry')
-              : _descriptionController.text,
+          title: _type == TransactionType.income 
+              ? (_category?.label ?? 'Income') 
+              : 'Expense',
           amount: amount,
           type: _type,
           date: DateTime.now(),
           category: _type == TransactionType.income ? _category : null,
           customCategory: _category == IncomeCategory.other ? _customCategoryController.text : null,
+          description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+          addedBy: userName,
         ),
       );
       _amountController.clear();
@@ -65,6 +73,71 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
       _customCategoryController.clear();
       _category = null;
     });
+  }
+
+  void _showTransactionDetails(TransactionModel transaction) {
+    final isIncome = transaction.type == TransactionType.income;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isIncome ? 'INCOME' : 'EXPENSE',
+                  style: AppTextStyles.label.copyWith(
+                    color: isIncome ? AppColors.primary : AppColors.error,
+                  ),
+                ),
+                Text(
+                  '${transaction.date.year}-${transaction.date.month.toString().padLeft(2, '0')}-${transaction.date.day.toString().padLeft(2, '0')}',
+                  style: AppTextStyles.label,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(transaction.title, style: AppTextStyles.headline),
+                ),
+                Text(
+                  '${isIncome ? '+' : '-'}\$${transaction.amount.toStringAsFixed(2)}',
+                  style: AppTextStyles.headline.copyWith(
+                    color: isIncome ? AppColors.primary : AppColors.error,
+                  ),
+                ),
+              ],
+            ),
+            if (transaction.categoryLabel != null) ...[
+              const SizedBox(height: 4),
+              Text('Category: ${transaction.categoryLabel}', style: AppTextStyles.label),
+            ],
+            const SizedBox(height: 12),
+            Text('LOGGED BY: ${transaction.addedBy ?? 'System'}', 
+                style: AppTextStyles.label.copyWith(color: AppColors.primary)),
+            const Divider(height: 32, color: AppColors.border),
+            Text('DETAILS', style: AppTextStyles.label),
+            const SizedBox(height: 8),
+            Text(
+              transaction.description ?? 'No detailed information provided for this log entry.',
+              style: AppTextStyles.body,
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -118,7 +191,10 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
 
             Text('MY TRANSACTIONS', style: AppTextStyles.label),
             const SizedBox(height: 12),
-            ..._transactions.map((t) => _TransactionTile(transaction: t)),
+            ..._transactions.map((t) => GestureDetector(
+                  onTap: () => _showTransactionDetails(t),
+                  child: _TransactionTile(transaction: t),
+                )),
           ],
         ),
       ),
@@ -203,8 +279,21 @@ class _TransactionTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(transaction.title, style: AppTextStyles.body),
-                if (transaction.categoryLabel != null)
-                  Text(transaction.categoryLabel!, style: AppTextStyles.label),
+                Row(
+                  children: [
+                    if (transaction.categoryLabel != null)
+                      Text(transaction.categoryLabel!, style: AppTextStyles.label),
+                    if (transaction.categoryLabel != null)
+                      Text(' · ', style: AppTextStyles.label),
+                    Opacity(
+                      opacity: 0.7,
+                      child: Text(
+                        'by ${transaction.addedBy ?? 'System'}',
+                        style: AppTextStyles.label.copyWith(color: AppColors.primary),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

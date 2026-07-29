@@ -1,40 +1,55 @@
-# Implementation Plan - Fix Top Bar Overlap
+# Implementation Plan - Interactive Details for Tasks and Finance
 
-The `RoboxTopBar` currently overlaps with the system status bar because it doesn't account for device-specific top insets. I will wrap the top bar content in a `SafeArea` to ensure it is rendered below the status bar.
+Enhance the ROBOX app by adding clickable details to Worker tasks and Admin financial logs.
 
 ## User Review Required
 
-> [!NOTE]
-> I will wrap the `RoboxTopBar` content in a `SafeArea`. This will push the content down on devices with status bars (like iPhones with notches or Android phones with hole-punch cameras).
+> [!IMPORTANT]
+> - I will add `isGroupTask` to `TaskModel` to distinguish between individual and group tasks.
+> - I will add a `description` field to `TransactionModel` to store and display detailed notes for financial logs.
+> - Details will be displayed using a styled `showModalBottomSheet` for a modern mobile feel.
 
 ## Proposed Changes
 
-### Core Widgets
-#### [MODIFY] [robox_top_bar.dart](file:///C:/Users/PAVILION/Desktop/Robox/lib/core/widgets/robox_top_bar.dart)
-- Wrap the `Container` in a `SafeArea` to respect system insets.
-- Adjust `preferredSize` if necessary to ensure the `Scaffold` allocates enough space for both the `SafeArea` and the 56px content height. Actually, a better way is to use `SafeArea(child: Container(...))` but that might not work well with `PreferredSizeWidget` directly if the parent doesn't handle the height increase.
-- The standard approach for a custom `AppBar` that respects `SafeArea` is:
-    ```dart
-    @override
-    Size get preferredSize => const Size.fromHeight(kToolbarHeight); // or 56
+### Data Models
+#### [MODIFY] [task_model.dart](file:///C:/Users/PAVILION/Desktop/Robox/lib/data/models/task_model.dart)
+- Add `final bool isGroupTask;` to `TaskModel`.
+- Update constructor.
 
-    @override
-    Widget build(BuildContext context) {
-      return SafeArea(
-        child: Container(
-          height: 56,
-          // ...
-        ),
-      );
-    }
-    ```
-    However, if the `Scaffold`'s `appBar` slot is used, it often expects the `PreferredSizeWidget` to provide the *full* height including the top padding if it's not a standard `AppBar`.
-    Actually, `Scaffold` wraps the `appBar` in a `MediaQuery.removePadding(removeTop: true)` if it's a `PreferredSizeWidget`? No.
+#### [MODIFY] [transaction_model.dart](file:///C:/Users/PAVILION/Desktop/Robox/lib/data/models/transaction_model.dart)
+- Add `final String? description;` to `TransactionModel`.
+- Update constructor.
 
-    A more robust way is to just use a `SafeArea` inside the `build` method.
+### Worker Feature
+#### [MODIFY] [my_tasks_screen.dart](file:///C:/Users/PAVILION/Desktop/Robox/lib/features/worker/my_tasks/view/my_tasks_screen.dart)
+- Update mock data to include `isGroupTask`.
+- Wrap `_TaskCard` in `InkWell`.
+- Implement `_showTaskDetails` modal displaying:
+    - Title, Priority Tag, Status.
+    - Type: "Individual Task" or "Group Task".
+    - Full Description.
+    - Deadline.
+
+### Admin Feature
+#### [MODIFY] [financial_management_screen.dart](file:///C:/Users/PAVILION/Desktop/Robox/lib/features/admin/financial_management/view/financial_management_screen.dart)
+- Update `logEntry` to pass both `title` (category/type summary) and `description` (user input).
+- Update mock data to include descriptions.
+- Wrap `_TransactionTile` in `InkWell`.
+- Implement `_showTransactionDetails` modal displaying:
+    - Title & Amount.
+    - Category.
+    - Date & Time.
+    - Detailed Description/Notes.
 
 ## Verification Plan
 
 ### Manual Verification
-- Check the app on a device or emulator with a status bar.
-- Verify that the "Robox" logo and "Sign out" button are fully visible and not covered by clock/battery icons.
+- **Worker App**:
+    - Navigate to "Tasks".
+    - Click a task card.
+    - Verify modal appears with correct "Individual/Group" type and description.
+- **Admin App**:
+    - Navigate to "Finance".
+    - Log a new entry with a description.
+    - Click the log entry in the list.
+    - Verify modal appears with the correct description and transaction info.

@@ -22,6 +22,7 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
       priority: TaskPriority.medium,
       status: TaskStatus.inProgress,
       progress: 0.65,
+      isGroupTask: true,
     ),
     TaskModel(
       id: '2',
@@ -31,6 +32,7 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
       priority: TaskPriority.high,
       status: TaskStatus.inProgress,
       progress: 0.20,
+      isGroupTask: false,
     ),
     TaskModel(
       id: '3',
@@ -40,6 +42,7 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
       priority: TaskPriority.high,
       status: TaskStatus.pending,
       progress: 0.0,
+      isGroupTask: true,
     ),
   ];
 
@@ -58,6 +61,54 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
     });
   }
 
+  void _showTaskDetails(TaskModel task) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                PriorityTag(priority: task.priority),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceHigh,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    task.isGroupTask ? 'GROUP TASK' : 'INDIVIDUAL',
+                    style: AppTextStyles.label.copyWith(fontSize: 10),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(task.title, style: AppTextStyles.headline),
+            const SizedBox(height: 8),
+            Text(
+              'Deadline: ${task.deadline.year}-${task.deadline.month.toString().padLeft(2, '0')}-${task.deadline.day.toString().padLeft(2, '0')}',
+              style: AppTextStyles.label,
+            ),
+            const Divider(height: 32, color: AppColors.border),
+            Text('DESCRIPTION', style: AppTextStyles.label),
+            const SizedBox(height: 8),
+            Text(task.description, style: AppTextStyles.body),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,9 +121,12 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
             const SizedBox(height: 4),
             Text('${_tasks.length} tasks assigned to you', style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
             const SizedBox(height: 20),
-            ...List.generate(_tasks.length, (index) => _TaskCard(
-                  task: _tasks[index],
-                  onSetProgress: (v) => _setProgress(index, v),
+            ...List.generate(_tasks.length, (index) => GestureDetector(
+                  onTap: () => _showTaskDetails(_tasks[index]),
+                  child: _TaskCard(
+                    task: _tasks[index],
+                    onSetProgress: (v) => _setProgress(index, v),
+                  ),
                 )),
           ],
         ),

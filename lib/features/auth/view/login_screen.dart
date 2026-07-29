@@ -25,9 +25,19 @@ class _LoginScreenState extends State<LoginScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Robox', style: AppTextStyles.headline.copyWith(fontSize: 44, color: AppColors.primary)),
-            const SizedBox(height: 4),
-            Text('Sign in to your workspace', style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
+            Center(
+              child: Image.asset(
+                'assets/logo.png',
+                height: 100,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.smart_toy_outlined,
+                  size: 100,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text('Sign in to your workspace', textAlign: TextAlign.center, style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
             const SizedBox(height: 40),
             TextField(
               controller: _emailController,

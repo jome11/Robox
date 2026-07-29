@@ -30,6 +30,8 @@ class TransactionModel {
   final DateTime date;
   final IncomeCategory? category; // only set when type == income
   final String? customCategory; // set when category == other
+  final String? description;
+  final String? addedBy;
 
   const TransactionModel({
     required this.id,
@@ -39,6 +41,8 @@ class TransactionModel {
     required this.date,
     this.category,
     this.customCategory,
+    this.description,
+    this.addedBy,
   });
 
   /// Display label for the category, falling back to the custom text.
