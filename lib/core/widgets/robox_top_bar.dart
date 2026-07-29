@@ -5,8 +5,8 @@ import '../theme/app_text_styles.dart';
 import '../../data/models/user_model.dart';
 import '../../features/auth/bloc/auth_bloc.dart';
 
-/// Persistent top bar shown above the bottom-nav shells: brand logo, a role
-/// badge (Admin/Worker), and a sign-out action — same on every screen.
+/// Persistent top bar shown above the bottom-nav shells.
+/// Uses [AppBar] internally to handle system status bar insets (SafeArea) automatically.
 class RoboxTopBar extends StatelessWidget implements PreferredSizeWidget {
   final UserRole role;
 
@@ -17,34 +17,42 @@ class RoboxTopBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: preferredSize.height,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          Text('Robox', style: AppTextStyles.logo),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.secondary.withAlpha((0.25 * 255).toInt()),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              role == UserRole.admin ? 'ADMIN' : 'WORKER',
-              style: AppTextStyles.label.copyWith(color: AppColors.secondary),
+    return AppBar(
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      automaticallyImplyLeading: false,
+      titleSpacing: 16,
+      shape: const Border(bottom: BorderSide(color: AppColors.border)),
+      title: Text('Robox', style: AppTextStyles.logo),
+      actions: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.secondary.withAlpha((0.25 * 255).toInt()),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            role == UserRole.admin ? 'ADMIN' : 'WORKER',
+            style: AppTextStyles.label.copyWith(color: AppColors.secondary),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
+              onTap: () => context.read<AuthBloc>().add(LogoutRequested()),
+              child: Text(
+                'Sign out',
+                style: AppTextStyles.body.copyWith(
+                  color: AppColors.textMuted,
+                  fontSize: 14,
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: () => context.read<AuthBloc>().add(LogoutRequested()),
-            child: Text('Sign out', style: AppTextStyles.body.copyWith(color: AppColors.textMuted, fontSize: 14)),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

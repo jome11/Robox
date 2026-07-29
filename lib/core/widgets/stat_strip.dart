@@ -26,6 +26,7 @@ class StatStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -39,6 +40,7 @@ class StatStrip extends StatelessWidget {
               width: 1,
               height: 32,
               color: AppColors.border,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
             );
           }
           final item = items[i ~/ 2];
@@ -48,13 +50,26 @@ class StatStrip extends StatelessWidget {
               children: [
                 Icon(item.icon, size: 16, color: item.accentColor),
                 const SizedBox(width: 6),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(item.value, style: AppTextStyles.headline.copyWith(fontSize: 18)),
-                    Text(item.label, style: AppTextStyles.label),
-                  ],
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          item.value,
+                          style: AppTextStyles.headline.copyWith(fontSize: 18),
+                        ),
+                      ),
+                      Text(
+                        item.label,
+                        style: AppTextStyles.label.copyWith(fontSize: 10),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

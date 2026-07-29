@@ -12,7 +12,7 @@ import '../../features/admin/task_allocation/view/task_allocation_screen.dart';
 import '../../features/admin/financial_management/view/financial_management_screen.dart';
 import '../../features/shared/leaderboard/view/leaderboard_screen.dart';
 import '../../features/worker/my_tasks/view/my_tasks_screen.dart';
-import '../../features/worker/wallet/view/wallet_screen.dart';
+import '../../features/worker/finance/view/worker_finance_screen.dart';
 
 class AppRouter {
   static GoRouter router(UserModel? user) {
@@ -87,7 +87,7 @@ class AppRouter {
               routes: [
                 GoRoute(
                   path: '/worker/finance',
-                  builder: (context, state) => const WalletScreen(),
+                  builder: (context, state) => const WorkerFinanceScreen(),
                 ),
               ],
             ),

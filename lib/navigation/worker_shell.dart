@@ -30,7 +30,7 @@ class WorkerShell extends StatelessWidget {
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Dashboard'),
             BottomNavigationBarItem(icon: Icon(Icons.grid_view_outlined), label: 'My Tasks'),
-            BottomNavigationBarItem(icon: Icon(Icons.track_changes_outlined), label: 'Wallet'),
+            BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_outlined), label: 'Finance'),
             BottomNavigationBarItem(icon: Icon(Icons.diamond_outlined), label: 'Ranking'),
           ],
         ),

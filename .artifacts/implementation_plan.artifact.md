@@ -1,40 +1,40 @@
-# Implementation Plan - Light Theme Update
+# Implementation Plan - Fix Top Bar Overlap
 
-Update the app's theme from dark (Robotic Blue/Electric Cyan) to a light theme (White/Blue) by centralizing changes in the core theme files.
+The `RoboxTopBar` currently overlaps with the system status bar because it doesn't account for device-specific top insets. I will wrap the top bar content in a `SafeArea` to ensure it is rendered below the status bar.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> The primary color is changing from `Electric Cyan` (light) to `Strong Blue` (darker). This affects `onPrimary` and contrast on elements like `RoboxButton`.
+> [!NOTE]
+> I will wrap the `RoboxTopBar` content in a `SafeArea`. This will push the content down on devices with status bars (like iPhones with notches or Android phones with hole-punch cameras).
 
 ## Proposed Changes
 
-### Core Theme
-#### [MODIFY] [app_colors.dart](file:///C:/Users/PAVILION/Desktop/Robox/lib/core/theme/app_colors.dart)
-Update the color palette to the new light scheme:
-- `background`: `#F7F9FC`
-- `surface`: `#F0F4FA`
-- `surfaceHigh`: `#E3EAF5`
-- `primary`: `#1565C0`
-- `onPrimary`: `#FFFFFF`
-- `secondary`: `#42A5F5`
-- `onSecondary`: `#FFFFFF`
-- `text`: `#1A1F2B`
-- `textMuted`: `#6B7280`
-- `border`: `#D6DEEA`
+### Core Widgets
+#### [MODIFY] [robox_top_bar.dart](file:///C:/Users/PAVILION/Desktop/Robox/lib/core/widgets/robox_top_bar.dart)
+- Wrap the `Container` in a `SafeArea` to respect system insets.
+- Adjust `preferredSize` if necessary to ensure the `Scaffold` allocates enough space for both the `SafeArea` and the 56px content height. Actually, a better way is to use `SafeArea(child: Container(...))` but that might not work well with `PreferredSizeWidget` directly if the parent doesn't handle the height increase.
+- The standard approach for a custom `AppBar` that respects `SafeArea` is:
+    ```dart
+    @override
+    Size get preferredSize => const Size.fromHeight(kToolbarHeight); // or 56
 
-#### [MODIFY] [app_theme.dart](file:///C:/Users/PAVILION/Desktop/Robox/lib/core/theme/app_theme.dart)
-Update `ThemeData` to reflect the light mode:
-- Set `brightness` to `Brightness.light`.
-- Use `ColorScheme.light`.
-- Ensure `AppBarTheme`, `InputDecorationTheme`, `CardThemeData`, and `ButtonTheme` work well with light colors.
+    @override
+    Widget build(BuildContext context) {
+      return SafeArea(
+        child: Container(
+          height: 56,
+          // ...
+        ),
+      );
+    }
+    ```
+    However, if the `Scaffold`'s `appBar` slot is used, it often expects the `PreferredSizeWidget` to provide the *full* height including the top padding if it's not a standard `AppBar`.
+    Actually, `Scaffold` wraps the `appBar` in a `MediaQuery.removePadding(removeTop: true)` if it's a `PreferredSizeWidget`? No.
+
+    A more robust way is to just use a `SafeArea` inside the `build` method.
 
 ## Verification Plan
 
 ### Manual Verification
-- **Login Screen**: Verify headline and button readability.
-- **Admin Dashboard**: Check the LineChart visibility against the new light background.
-- **Worker Dashboard**: Verify task progress bars and stat cards.
-- **Leaderboard**: Check the "You" highlight row contrast.
-- **Bottom Navigation**: Ensure the frosted glass effect still looks good in light mode.
-- **Task Allocation/Finance**: Verify form fields and transaction logs.
+- Check the app on a device or emulator with a status bar.
+- Verify that the "Robox" logo and "Sign out" button are fully visible and not covered by clock/battery icons.

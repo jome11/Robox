@@ -1,6 +1,5 @@
-# Tasks - Light Theme Update
+# Tasks - Fix Top Bar Overlap
 
-- [x] Update `app_colors.dart` with light theme palette
-- [x] Update `app_theme.dart` for light mode support
-- [x] Verify UI contrast and readability
+- [x] Wrap `RoboxTopBar` content in `SafeArea` (via `AppBar` migration)
+- [x] Verify fix on simulated device
 - [x] Create walkthrough
