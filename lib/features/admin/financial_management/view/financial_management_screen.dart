@@ -94,67 +94,37 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
     });
   }
 
+  void _updateTransactionDescription(String id, String newDescription) {
+    setState(() {
+      final index = _transactions.indexWhere((t) => t.id == id);
+      if (index != -1) {
+        final t = _transactions[index];
+        _transactions[index] = TransactionModel(
+          id: t.id,
+          title: t.title,
+          amount: t.amount,
+          type: t.type,
+          date: t.date,
+          category: t.category,
+          customCategory: t.customCategory,
+          description: newDescription,
+          addedBy: t.addedBy,
+        );
+      }
+    });
+  }
+
   void _showTransactionDetails(TransactionModel transaction) {
-    final isIncome = transaction.type == TransactionType.income;
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.background,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  isIncome ? 'INCOME' : 'EXPENSE',
-                  style: AppTextStyles.label.copyWith(
-                    color: isIncome ? AppColors.primary : AppColors.error,
-                  ),
-                ),
-                Text(
-                  '${transaction.date.year}-${transaction.date.month.toString().padLeft(2, '0')}-${transaction.date.day.toString().padLeft(2, '0')}',
-                  style: AppTextStyles.label,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(transaction.title, style: AppTextStyles.headline),
-                ),
-                Text(
-                  '${isIncome ? '+' : '-'}\$${transaction.amount.toStringAsFixed(2)}',
-                  style: AppTextStyles.headline.copyWith(
-                    color: isIncome ? AppColors.primary : AppColors.error,
-                  ),
-                ),
-              ],
-            ),
-            if (transaction.categoryLabel != null) ...[
-              const SizedBox(height: 4),
-              Text('Category: ${transaction.categoryLabel}', style: AppTextStyles.label),
-            ],
-            const SizedBox(height: 12),
-            Text('LOGGED BY: ${transaction.addedBy ?? 'System'}', 
-                style: AppTextStyles.label.copyWith(color: AppColors.primary)),
-            const Divider(height: 32, color: AppColors.border),
-            Text('DETAILS', style: AppTextStyles.label),
-            const SizedBox(height: 8),
-            Text(
-              transaction.description ?? 'No detailed information provided for this log entry.',
-              style: AppTextStyles.body,
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
+      builder: (context) => _TransactionDetailModal(
+        transaction: transaction,
+        onUpdateDescription: (desc) => _updateTransactionDescription(transaction.id, desc),
       ),
     );
   }
@@ -218,6 +188,146 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
                   onTap: () => _showTransactionDetails(t),
                   child: _TransactionTile(transaction: t),
                 )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TransactionDetailModal extends StatefulWidget {
+  final TransactionModel transaction;
+  final ValueChanged<String> onUpdateDescription;
+
+  const _TransactionDetailModal({
+    required this.transaction,
+    required this.onUpdateDescription,
+  });
+
+  @override
+  State<_TransactionDetailModal> createState() => _TransactionDetailModalState();
+}
+
+class _TransactionDetailModalState extends State<_TransactionDetailModal> {
+  late TextEditingController _editController;
+  bool _isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _editController = TextEditingController(text: widget.transaction.description);
+  }
+
+  @override
+  void dispose() {
+    _editController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isIncome = widget.transaction.type == TransactionType.income;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.5,
+      minChildSize: 0.3,
+      maxChildSize: 0.8,
+      expand: false,
+      builder: (context, scrollController) => SingleChildScrollView(
+        controller: scrollController,
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isIncome ? 'INCOME' : 'EXPENSE',
+                  style: AppTextStyles.label.copyWith(
+                    color: isIncome ? AppColors.primary : AppColors.error,
+                  ),
+                ),
+                Text(
+                  '${widget.transaction.date.year}-${widget.transaction.date.month.toString().padLeft(2, '0')}-${widget.transaction.date.day.toString().padLeft(2, '0')}',
+                  style: AppTextStyles.label,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(widget.transaction.title, style: AppTextStyles.headline),
+                ),
+                Text(
+                  '${isIncome ? '+' : '-'}\$${widget.transaction.amount.toStringAsFixed(2)}',
+                  style: AppTextStyles.headline.copyWith(
+                    color: isIncome ? AppColors.primary : AppColors.error,
+                  ),
+                ),
+              ],
+            ),
+            if (widget.transaction.categoryLabel != null) ...[
+              const SizedBox(height: 4),
+              Text('Category: ${widget.transaction.categoryLabel}', style: AppTextStyles.label),
+            ],
+            const SizedBox(height: 12),
+            Text('LOGGED BY: ${widget.transaction.addedBy ?? 'System'}', 
+                style: AppTextStyles.label.copyWith(color: AppColors.primary)),
+            const Divider(height: 32, color: AppColors.border),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('DETAILS', style: AppTextStyles.label),
+                if (!_isEditing)
+                  GestureDetector(
+                    onTap: () => setState(() => _isEditing = true),
+                    child: Text('EDIT', style: AppTextStyles.label.copyWith(color: AppColors.primary)),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_isEditing)
+              Column(
+                children: [
+                  TextField(
+                    controller: _editController,
+                    style: AppTextStyles.body,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  RoboxButton(
+                    label: 'SAVE CHANGES',
+                    onPressed: () {
+                      widget.onUpdateDescription(_editController.text);
+                      setState(() => _isEditing = false);
+                    },
+                  ),
+                ],
+              )
+            else
+              Text(
+                widget.transaction.description ?? 'No detailed information provided for this log entry.',
+                style: AppTextStyles.body,
+              ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

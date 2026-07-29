@@ -13,6 +13,7 @@ import '../../features/admin/financial_management/view/financial_management_scre
 import '../../features/shared/leaderboard/view/leaderboard_screen.dart';
 import '../../features/worker/my_tasks/view/my_tasks_screen.dart';
 import '../../features/worker/finance/view/worker_finance_screen.dart';
+import '../../features/shared/chat/view/chat_screen.dart';
 
 class AppRouter {
   static GoRouter router(UserModel? user) {
@@ -24,6 +25,15 @@ class AppRouter {
           builder: (context, state) => const LoginScreen(),
         ),
         
+        GoRoute(
+          path: '/chat/:taskId',
+          builder: (context, state) {
+            final taskId = state.pathParameters['taskId'] ?? 'unknown';
+            final taskTitle = state.extra as String? ?? 'Chat';
+            return ChatScreen(taskId: taskId, taskTitle: taskTitle);
+          },
+        ),
+
         // Admin Shell
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => AdminShell(navigationShell: navigationShell),

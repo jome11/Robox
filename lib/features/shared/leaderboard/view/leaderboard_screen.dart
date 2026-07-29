@@ -1,34 +1,233 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/robox_button.dart';
 import '../../../../data/models/leaderboard_entry_model.dart';
+import '../../../../data/models/user_model.dart';
+import '../../../auth/bloc/auth_bloc.dart';
 
-class LeaderboardScreen extends StatelessWidget {
+class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
 
-  // Mock data — replace with repository data later. "You" flags the current user's row.
-  static final List<LeaderboardEntryModel> _entries = [
-    const LeaderboardEntryModel(userId: '1', userName: 'Marcus T.', rank: 1, efficiency: 94.0, tasksCompleted: 42),
-    const LeaderboardEntryModel(userId: '2', userName: 'You', rank: 2, efficiency: 91.0, tasksCompleted: 38),
-    const LeaderboardEntryModel(userId: '3', userName: 'Olu B.', rank: 3, efficiency: 87.0, tasksCompleted: 35),
-    const LeaderboardEntryModel(userId: '4', userName: 'Jamie L.', rank: 4, efficiency: 82.0, tasksCompleted: 29),
-    const LeaderboardEntryModel(userId: '5', userName: 'Sam K.', rank: 5, efficiency: 78.0, tasksCompleted: 21),
+  @override
+  State<LeaderboardScreen> createState() => _LeaderboardScreenState();
+}
+
+class _LeaderboardScreenState extends State<LeaderboardScreen> {
+  // Mock data — replace with repository data later.
+  final List<LeaderboardEntryModel> _entries = [
+    const LeaderboardEntryModel(userId: '1', userName: 'Marcus T.', password: 'password123', rank: 1, efficiency: 94.0, tasksCompleted: 42),
+    const LeaderboardEntryModel(userId: '2', userName: 'You', password: '12345678', rank: 2, efficiency: 91.0, tasksCompleted: 38),
+    const LeaderboardEntryModel(userId: '3', userName: 'Olu B.', password: 'secureKey!', rank: 3, efficiency: 87.0, tasksCompleted: 35),
+    const LeaderboardEntryModel(userId: '4', userName: 'Jamie L.', password: 'operator4', rank: 4, efficiency: 82.0, tasksCompleted: 29),
+    const LeaderboardEntryModel(userId: '5', userName: 'Sam K.', password: 'samPassword', rank: 5, efficiency: 78.0, tasksCompleted: 21),
   ];
 
   static const _medals = ['🥇', '🥈', '🥉'];
 
+  void _addUser() {
+    final nameController = TextEditingController();
+    final passwordController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('Add New Operator', style: AppTextStyles.headline.copyWith(fontSize: 20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              style: AppTextStyles.body,
+              decoration: InputDecoration(
+                hintText: 'Operator Name',
+                hintStyle: AppTextStyles.body.copyWith(color: AppColors.textMuted),
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: passwordController,
+              style: AppTextStyles.body,
+              decoration: InputDecoration(
+                hintText: 'Operator Password',
+                hintStyle: AppTextStyles.body.copyWith(color: AppColors.textMuted),
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('CANCEL', style: AppTextStyles.label),
+          ),
+          RoboxButton(
+            label: 'ADD',
+            onPressed: () {
+              if (nameController.text.isNotEmpty && passwordController.text.isNotEmpty) {
+                setState(() {
+                  _entries.add(LeaderboardEntryModel(
+                    userId: DateTime.now().millisecondsSinceEpoch.toString(),
+                    userName: nameController.text,
+                    password: passwordController.text,
+                    rank: _entries.length + 1,
+                    efficiency: 0.0,
+                    tasksCompleted: 0,
+                  ));
+                });
+                Navigator.pop(context);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeUser(String userId) {
+    setState(() {
+      _entries.removeWhere((element) => element.userId == userId);
+      // Re-rank
+      for (int i = 0; i < _entries.length; i++) {
+        final e = _entries[i];
+        _entries[i] = LeaderboardEntryModel(
+          userId: e.userId,
+          userName: e.userName,
+          password: e.password,
+          rank: i + 1,
+          efficiency: e.efficiency,
+          tasksCompleted: e.tasksCompleted,
+        );
+      }
+    });
+  }
+
+  void _showUserPasswords() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('OPERATOR CREDENTIALS', style: AppTextStyles.label.copyWith(color: AppColors.primary)),
+            const SizedBox(height: 16),
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: _entries.length,
+                separatorBuilder: (context, index) => const Divider(color: AppColors.border),
+                itemBuilder: (context, index) {
+                  final entry = _entries[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(entry.userName, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
+                            Text('ID: ${entry.userId}', style: AppTextStyles.label.copyWith(fontSize: 10)),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Text(
+                                entry.password,
+                                style: AppTextStyles.label.copyWith(
+                                  color: AppColors.secondary,
+                                  fontFamily: 'JetBrainsMono',
+                                ),
+                              ),
+                            ),
+                            if (entry.userName != 'You') ...[
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+                                onPressed: () {
+                                  _removeUser(entry.userId);
+                                  Navigator.pop(context); // Close and reopen to refresh if needed, or rely on setState
+                                  _showUserPasswords(); // Re-open to show updated list
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    final isAdmin = authState is AuthAuthenticated && authState.user.role == UserRole.admin;
+
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Team Rankings', style: AppTextStyles.headline),
-            const SizedBox(height: 4),
-            Text('Tasks completed · this month', style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Team Rankings', style: AppTextStyles.headline),
+                    const SizedBox(height: 4),
+                    Text('Tasks completed · this month', style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
+                  ],
+                ),
+                if (isAdmin)
+                  GestureDetector(
+                    onTap: _showUserPasswords,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withAlpha(25),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.primary.withAlpha(50)),
+                      ),
+                      child: Column(
+                        children: [
+                          Text('${_entries.length}', style: AppTextStyles.headline.copyWith(fontSize: 20, color: AppColors.primary)),
+                          Text('USERS', style: AppTextStyles.label.copyWith(fontSize: 10)),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: 20),
 
             Container(
@@ -137,9 +336,17 @@ class LeaderboardScreen extends StatelessWidget {
                 ),
               );
             }),
+            const SizedBox(height: 80), // Space for FAB
           ],
         ),
       ),
+      floatingActionButton: isAdmin
+          ? FloatingActionButton(
+              onPressed: _addUser,
+              backgroundColor: AppColors.primary,
+              child: const Icon(Icons.add, color: AppColors.onPrimary),
+            )
+          : null,
     );
   }
 }

@@ -80,61 +80,79 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.background,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  isIncome ? 'INCOME' : 'EXPENSE',
-                  style: AppTextStyles.label.copyWith(
-                    color: isIncome ? AppColors.primary : AppColors.error,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.8,
+        expand: false,
+        builder: (context, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                Text(
-                  '${transaction.date.year}-${transaction.date.month.toString().padLeft(2, '0')}-${transaction.date.day.toString().padLeft(2, '0')}',
-                  style: AppTextStyles.label,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(transaction.title, style: AppTextStyles.headline),
-                ),
-                Text(
-                  '${isIncome ? '+' : '-'}\$${transaction.amount.toStringAsFixed(2)}',
-                  style: AppTextStyles.headline.copyWith(
-                    color: isIncome ? AppColors.primary : AppColors.error,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    isIncome ? 'INCOME' : 'EXPENSE',
+                    style: AppTextStyles.label.copyWith(
+                      color: isIncome ? AppColors.primary : AppColors.error,
+                    ),
                   ),
-                ),
+                  Text(
+                    '${transaction.date.year}-${transaction.date.month.toString().padLeft(2, '0')}-${transaction.date.day.toString().padLeft(2, '0')}',
+                    style: AppTextStyles.label,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(transaction.title, style: AppTextStyles.headline),
+                  ),
+                  Text(
+                    '${isIncome ? '+' : '-'}\$${transaction.amount.toStringAsFixed(2)}',
+                    style: AppTextStyles.headline.copyWith(
+                      color: isIncome ? AppColors.primary : AppColors.error,
+                    ),
+                  ),
+                ],
+              ),
+              if (transaction.categoryLabel != null) ...[
+                const SizedBox(height: 4),
+                Text('Category: ${transaction.categoryLabel}', style: AppTextStyles.label),
               ],
-            ),
-            if (transaction.categoryLabel != null) ...[
-              const SizedBox(height: 4),
-              Text('Category: ${transaction.categoryLabel}', style: AppTextStyles.label),
+              const SizedBox(height: 12),
+              Text('LOGGED BY: ${transaction.addedBy ?? 'System'}', 
+                  style: AppTextStyles.label.copyWith(color: AppColors.primary)),
+              const Divider(height: 32, color: AppColors.border),
+              Text('DETAILS', style: AppTextStyles.label),
+              const SizedBox(height: 8),
+              Text(
+                transaction.description ?? 'No detailed information provided for this log entry.',
+                style: AppTextStyles.body,
+              ),
+              const SizedBox(height: 32),
             ],
-            const SizedBox(height: 12),
-            Text('LOGGED BY: ${transaction.addedBy ?? 'System'}', 
-                style: AppTextStyles.label.copyWith(color: AppColors.primary)),
-            const Divider(height: 32, color: AppColors.border),
-            Text('DETAILS', style: AppTextStyles.label),
-            const SizedBox(height: 8),
-            Text(
-              transaction.description ?? 'No detailed information provided for this log entry.',
-              style: AppTextStyles.body,
-            ),
-            const SizedBox(height: 32),
-          ],
+          ),
         ),
       ),
     );
