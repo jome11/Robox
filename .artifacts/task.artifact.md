@@ -1,9 +1,8 @@
-# Tasks - Excel Upload for Finance
+# Tasks - Self-Registration with Admin Approval
 
-- [ ] Add `file_picker` dependency to `pubspec.yaml`
-- [ ] Implement `_pickExcelFile` in `FinancialManagementScreen`
-- [ ] Add "UPLOAD EXCEL" button to `FinancialManagementScreen` UI
-- [ ] Implement `_pickExcelFile` in `WorkerFinanceScreen`
-- [ ] Add "UPLOAD EXCEL" button to `WorkerFinanceScreen` UI
-- [ ] Verify functionality
-- [ ] Create walkthrough
+- [x] Data Layer: `PendingRequestModel`, `AuthRepository` updates, `AdminRepository`
+- [x] BLoC Layer: `SignupBloc`, `PendingRequestsBloc`
+- [x] Auth UI: `SignupScreen`, `PendingApprovalScreen`, `LoginScreen` updates
+- [x] Admin UI: `PendingRequestsScreen`, `AdminDashboardScreen` updates
+- [x] Core: `AppRouter` updates
+- [x] Final Wiring and Verification

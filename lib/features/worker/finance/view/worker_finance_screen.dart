@@ -31,7 +31,7 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
       date: DateTime.now().subtract(const Duration(hours: 5)),
       category: IncomeCategory.threeDPrint,
       description: 'Payout for the successful completion of the Node 7 maintenance print job.',
-      addedBy: 'Worker Operator',
+      addedBy: 'Worker',
     ),
   ];
 
@@ -49,7 +49,7 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
     if (_type == TransactionType.income && _category == null) return;
 
     final authState = context.read<AuthBloc>().state;
-    final userName = authState is AuthAuthenticated ? authState.user.name : 'Unknown Operator';
+    final userName = authState is AuthAuthenticated ? authState.user.name : 'Unknown Worker';
 
     setState(() {
       _transactions.insert(

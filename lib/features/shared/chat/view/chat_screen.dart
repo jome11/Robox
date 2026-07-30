@@ -23,13 +23,13 @@ class _ChatScreenState extends State<ChatScreen> {
       isMe: false,
     ),
     ChatMessage(
-      senderName: 'Operator Alpha',
+      senderName: 'Worker Alpha',
       content: 'Understood. I\'m currently running the diagnostics.',
       timestamp: DateTime.now().subtract(const Duration(minutes: 45)),
       isMe: false,
     ),
     ChatMessage(
-      senderName: 'Operator Beta',
+      senderName: 'Worker Beta',
       content: 'I\'ve prepared the replacement sensors if the diagnostics fail.',
       timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
       isMe: false,

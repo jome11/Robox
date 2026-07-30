@@ -5,6 +5,10 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/robox_button.dart';
 import '../../../../core/widgets/stat_strip.dart';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import '../../pending_requests/bloc/pending_requests_bloc.dart';
+
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
 
@@ -16,9 +20,47 @@ class AdminDashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Dashboard', style: AppTextStyles.headline),
-            const SizedBox(height: 4),
-            Text('Team and business overview', style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Dashboard', style: AppTextStyles.headline),
+                    const SizedBox(height: 4),
+                    Text('Team and business overview',
+                        style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
+                  ],
+                ),
+                BlocBuilder<PendingRequestsBloc, PendingRequestsState>(
+                  builder: (context, state) {
+                    if (state is PendingRequestsLoaded && state.requests.isNotEmpty) {
+                      return GestureDetector(
+                        onTap: () => context.push('/admin/pending-requests'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.error,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.person_add_alt_1, size: 16, color: Colors.white),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${state.requests.length} PENDING',
+                                style: AppTextStyles.label.copyWith(color: Colors.white, fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
 
             const StatStrip(items: [

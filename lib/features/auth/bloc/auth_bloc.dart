@@ -12,11 +12,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc(this._authRepository) : super(AuthInitial()) {
     on<LoginRequested>((event, emit) async {
       emit(AuthLoading());
-      final user = await _authRepository.login(event.email, event.password);
-      if (user != null) {
-        emit(AuthAuthenticated(user));
-      } else {
-        emit(const AuthError('Invalid credentials'));
+      try {
+        final user = await _authRepository.login(event.email, event.password);
+        if (user != null) {
+          emit(AuthAuthenticated(user));
+        } else {
+          emit(const AuthError('Invalid credentials'));
+        }
+      } catch (e) {
+        if (e.toString().contains('ACCOUNT_PENDING')) {
+          emit(const AuthError('Your account is still pending admin approval'));
+        } else {
+          emit(const AuthError('An unexpected error occurred'));
+        }
       }
     });
 

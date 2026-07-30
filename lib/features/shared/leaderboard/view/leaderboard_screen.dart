@@ -3,7 +3,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/robox_button.dart';
 import '../../../../data/models/leaderboard_entry_model.dart';
 import '../../../../data/models/user_model.dart';
 import '../../../auth/bloc/auth_bloc.dart';
@@ -21,75 +20,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     const LeaderboardEntryModel(userId: '1', userName: 'Marcus T.', password: 'password123', rank: 1, efficiency: 94.0, tasksCompleted: 42),
     const LeaderboardEntryModel(userId: '2', userName: 'You', password: '12345678', rank: 2, efficiency: 91.0, tasksCompleted: 38),
     const LeaderboardEntryModel(userId: '3', userName: 'Olu B.', password: 'secureKey!', rank: 3, efficiency: 87.0, tasksCompleted: 35),
-    const LeaderboardEntryModel(userId: '4', userName: 'Jamie L.', password: 'operator4', rank: 4, efficiency: 82.0, tasksCompleted: 29),
+    const LeaderboardEntryModel(userId: '4', userName: 'Jamie L.', password: 'worker4', rank: 4, efficiency: 82.0, tasksCompleted: 29),
     const LeaderboardEntryModel(userId: '5', userName: 'Sam K.', password: 'samPassword', rank: 5, efficiency: 78.0, tasksCompleted: 21),
   ];
 
   static const _medals = ['🥇', '🥈', '🥉'];
-
-  void _addUser() {
-    final nameController = TextEditingController();
-    final passwordController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text('Add New Operator', style: AppTextStyles.headline.copyWith(fontSize: 20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              style: AppTextStyles.body,
-              decoration: InputDecoration(
-                hintText: 'Operator Name',
-                hintStyle: AppTextStyles.body.copyWith(color: AppColors.textMuted),
-                filled: true,
-                fillColor: AppColors.background,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: passwordController,
-              style: AppTextStyles.body,
-              decoration: InputDecoration(
-                hintText: 'Operator Password',
-                hintStyle: AppTextStyles.body.copyWith(color: AppColors.textMuted),
-                filled: true,
-                fillColor: AppColors.background,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('CANCEL', style: AppTextStyles.label),
-          ),
-          RoboxButton(
-            label: 'ADD',
-            onPressed: () {
-              if (nameController.text.isNotEmpty && passwordController.text.isNotEmpty) {
-                setState(() {
-                  _entries.add(LeaderboardEntryModel(
-                    userId: DateTime.now().millisecondsSinceEpoch.toString(),
-                    userName: nameController.text,
-                    password: passwordController.text,
-                    rank: _entries.length + 1,
-                    efficiency: 0.0,
-                    tasksCompleted: 0,
-                  ));
-                });
-                Navigator.pop(context);
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
 
   void _removeUser(String userId) {
     setState(() {
@@ -122,7 +57,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('OPERATOR CREDENTIALS', style: AppTextStyles.label.copyWith(color: AppColors.primary)),
+            Text('WORKER CREDENTIALS', style: AppTextStyles.label.copyWith(color: AppColors.primary)),
             const SizedBox(height: 16),
             Flexible(
               child: ListView.separated(
@@ -166,8 +101,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                 icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
                                 onPressed: () {
                                   _removeUser(entry.userId);
-                                  Navigator.pop(context); // Close and reopen to refresh if needed, or rely on setState
-                                  _showUserPasswords(); // Re-open to show updated list
+                                  Navigator.pop(context);
+                                  _showUserPasswords();
                                 },
                               ),
                             ],
@@ -314,7 +249,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                         children: [
                           Row(
                             children: [
-                              Text(entry.userName, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600)),
+                              Flexible(
+                                child: Text(
+                                  entry.userName,
+                                  style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                               if (isYou) ...[
                                 const SizedBox(width: 6),
                                 Text('YOU', style: AppTextStyles.label.copyWith(color: AppColors.primary)),
@@ -336,17 +277,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 ),
               );
             }),
-            const SizedBox(height: 80), // Space for FAB
           ],
         ),
       ),
-      floatingActionButton: isAdmin
-          ? FloatingActionButton(
-              onPressed: _addUser,
-              backgroundColor: AppColors.primary,
-              child: const Icon(Icons.add, color: AppColors.onPrimary),
-            )
-          : null,
     );
   }
 }

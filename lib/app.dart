@@ -5,13 +5,18 @@ import 'core/routes/app_router.dart';
 import 'features/auth/bloc/auth_bloc.dart';
 import 'data/repositories/auth_repository.dart';
 
+import 'data/repositories/admin_repository.dart';
+
 class RoboxApp extends StatelessWidget {
   const RoboxApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider<AuthRepository>(
-      create: (context) => AuthRepositoryImpl(),
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<AuthRepository>(create: (context) => AuthRepositoryImpl()),
+        RepositoryProvider<AdminRepository>(create: (context) => AdminRepositoryImpl()),
+      ],
       child: BlocProvider(
         create: (context) => AuthBloc(context.read<AuthRepository>()),
         child: BlocBuilder<AuthBloc, AuthState>(

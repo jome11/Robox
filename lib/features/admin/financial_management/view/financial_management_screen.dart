@@ -69,7 +69,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
     if (_type == TransactionType.income && _category == null) return;
 
     final authState = context.read<AuthBloc>().state;
-    final userName = authState is AuthAuthenticated ? authState.user.name : 'Unknown Operator';
+    final userName = authState is AuthAuthenticated ? authState.user.name : 'Unknown Worker';
 
     setState(() {
       _transactions.insert(

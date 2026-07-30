@@ -15,6 +15,13 @@ import '../../features/worker/my_tasks/view/my_tasks_screen.dart';
 import '../../features/worker/finance/view/worker_finance_screen.dart';
 import '../../features/shared/chat/view/chat_screen.dart';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../features/auth/view/signup_screen.dart';
+import '../../features/auth/view/pending_approval_screen.dart';
+import '../../features/admin/pending_requests/view/pending_requests_screen.dart';
+import '../../features/auth/bloc/signup_bloc.dart';
+import '../../data/repositories/auth_repository.dart';
+
 class AppRouter {
   static GoRouter router(UserModel? user) {
     return GoRouter(
@@ -23,6 +30,17 @@ class AppRouter {
         GoRoute(
           path: '/login',
           builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/signup',
+          builder: (context, state) => BlocProvider(
+            create: (context) => SignupBloc(context.read<AuthRepository>()),
+            child: const SignupScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/pending-approval',
+          builder: (context, state) => const PendingApprovalScreen(),
         ),
         
         GoRoute(
@@ -43,6 +61,12 @@ class AppRouter {
                 GoRoute(
                   path: '/admin',
                   builder: (context, state) => const AdminDashboardScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'pending-requests',
+                      builder: (context, state) => const PendingRequestsScreen(),
+                    ),
+                  ],
                 ),
               ],
             ),
