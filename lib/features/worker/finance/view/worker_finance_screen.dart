@@ -18,6 +18,7 @@ class WorkerFinanceScreen extends StatefulWidget {
 class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
   TransactionType _type = TransactionType.income;
   IncomeCategory? _category;
+  String? _subCategory;
   final _customCategoryController = TextEditingController();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -63,6 +64,7 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
           type: _type,
           date: DateTime.now(),
           category: _type == TransactionType.income ? _category : null,
+          subCategory: _subCategory,
           customCategory: _category == IncomeCategory.other ? _customCategoryController.text : null,
           description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
           addedBy: userName,
@@ -72,6 +74,7 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
       _descriptionController.clear();
       _customCategoryController.clear();
       _category = null;
+      _subCategory = null;
     });
   }
 
@@ -138,7 +141,7 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
               ),
               if (transaction.categoryLabel != null) ...[
                 const SizedBox(height: 4),
-                Text('Category: ${transaction.categoryLabel}', style: AppTextStyles.label),
+                Text('Classification: ${transaction.categoryLabel}', style: AppTextStyles.label),
               ],
               const SizedBox(height: 12),
               Text('LOGGED BY: ${transaction.addedBy ?? 'System'}', 
@@ -188,8 +191,13 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
             if (_type == TransactionType.income) ...[
               IncomeCategoryDropdown(
                 selected: _category,
+                selectedSub: _subCategory,
                 customController: _customCategoryController,
-                onChanged: (c) => setState(() => _category = c),
+                onChanged: (c) => setState(() {
+                  _category = c;
+                  _subCategory = null;
+                }),
+                onSubChanged: (s) => setState(() => _subCategory = s),
               ),
               const SizedBox(height: 16),
             ],

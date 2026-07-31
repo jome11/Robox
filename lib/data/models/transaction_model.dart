@@ -6,6 +6,7 @@ enum IncomeCategory {
   threeDPrint,
   filament,
   threeDMachineSale,
+  classes,
   other;
 
   String get label {
@@ -16,6 +17,8 @@ enum IncomeCategory {
         return 'Filament';
       case IncomeCategory.threeDMachineSale:
         return '3D Machine Sale';
+      case IncomeCategory.classes:
+        return 'Classes';
       case IncomeCategory.other:
         return 'Other';
     }
@@ -29,6 +32,7 @@ class TransactionModel {
   final TransactionType type;
   final DateTime date;
   final IncomeCategory? category; // only set when type == income
+  final String? subCategory; // nested selection based on category
   final String? customCategory; // set when category == other
   final String? description;
   final String? addedBy;
@@ -40,6 +44,7 @@ class TransactionModel {
     required this.type,
     required this.date,
     this.category,
+    this.subCategory,
     this.customCategory,
     this.description,
     this.addedBy,
@@ -48,9 +53,18 @@ class TransactionModel {
   /// Display label for the category, falling back to the custom text.
   String? get categoryLabel {
     if (category == null) return null;
+    
+    String mainLabel;
     if (category == IncomeCategory.other) {
-      return (customCategory == null || customCategory!.isEmpty) ? 'Other' : customCategory;
+      mainLabel = (customCategory == null || customCategory!.isEmpty) ? 'Other' : customCategory!;
+    } else {
+      mainLabel = category!.label;
     }
-    return category!.label;
+
+    if (subCategory != null && subCategory!.isNotEmpty) {
+      return '$mainLabel · $subCategory';
+    }
+    
+    return mainLabel;
   }
 }

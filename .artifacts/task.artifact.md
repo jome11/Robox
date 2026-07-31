@@ -1,6 +1,8 @@
-# Tasks - Fix Navigation and UI Overflow
+# Tasks - Finance Sub-Categories Implementation
 
-- [x] Change `push` to `go` in `AdminDashboardScreen`
-- [ ] Fix `_TransactionTile` overflow in `FinancialManagementScreen`
-- [ ] Fix `_TransactionTile` overflow in `WorkerFinanceScreen`
-- [ ] Final Verification
+- [ ] Update `TransactionModel` and `IncomeCategory` enum
+- [ ] Refactor `IncomeCategoryDropdown` to support nested sub-categories
+- [ ] Update `FinancialManagementScreen` (Admin) to handle sub-category state
+- [ ] Update `WorkerFinanceScreen` (Worker) to handle sub-category state
+- [ ] Verify nested dropdown visibility and data persistence
+- [ ] Create walkthrough

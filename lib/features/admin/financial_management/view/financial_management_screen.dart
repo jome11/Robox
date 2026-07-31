@@ -18,6 +18,7 @@ class FinancialManagementScreen extends StatefulWidget {
 class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
   TransactionType _type = TransactionType.income;
   IncomeCategory? _category;
+  String? _subCategory;
   final _customCategoryController = TextEditingController();
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -31,6 +32,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
       type: TransactionType.income,
       date: DateTime.now().subtract(const Duration(hours: 2)),
       category: IncomeCategory.filament,
+      subCategory: 'PLA FILAMENT',
       description: 'Bulk purchase of PLA and PETG filament for the robotics lab.',
       addedBy: 'Jomeme Admin',
     ),
@@ -50,6 +52,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
       type: TransactionType.income,
       date: DateTime.now().subtract(const Duration(days: 2)),
       category: IncomeCategory.threeDMachineSale,
+      subCategory: 'K2 PLUS',
       description: 'Refurbished Mark II printer sold to local workshop.',
       addedBy: 'Jomeme Admin',
     ),
@@ -83,6 +86,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
           type: _type,
           date: DateTime.now(),
           category: _type == TransactionType.income ? _category : null,
+          subCategory: _subCategory,
           customCategory: _category == IncomeCategory.other ? _customCategoryController.text : null,
           description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
           addedBy: userName,
@@ -92,6 +96,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
       _descriptionController.clear();
       _customCategoryController.clear();
       _category = null;
+      _subCategory = null;
     });
   }
 
@@ -126,6 +131,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
           type: t.type,
           date: t.date,
           category: t.category,
+          subCategory: t.subCategory,
           customCategory: t.customCategory,
           description: newDescription,
           addedBy: t.addedBy,
@@ -159,19 +165,20 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
           children: [
             Text('Finance', style: AppTextStyles.headline),
             const SizedBox(height: 4),
-            Text('Industrial resource allocation and transaction monitoring.', style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
+            Text('Industrial resource allocation and transaction monitoring.',
+                style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
             const SizedBox(height: 20),
-
-            // Income / Expense toggle
             Row(
               children: [
-                Expanded(child: _TypeToggleButton(
+                Expanded(
+                    child: _TypeToggleButton(
                   label: 'Income',
                   selected: _type == TransactionType.income,
                   onTap: () => setState(() => _type = TransactionType.income),
                 )),
                 const SizedBox(width: 8),
-                Expanded(child: _TypeToggleButton(
+                Expanded(
+                    child: _TypeToggleButton(
                   label: 'Expense',
                   selected: _type == TransactionType.expense,
                   onTap: () => setState(() => _type = TransactionType.expense),
@@ -179,26 +186,33 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
               ],
             ),
             const SizedBox(height: 16),
-
             if (_type == TransactionType.income) ...[
               IncomeCategoryDropdown(
                 selected: _category,
+                selectedSub: _subCategory,
                 customController: _customCategoryController,
-                onChanged: (c) => setState(() => _category = c),
+                onChanged: (c) => setState(() {
+                  _category = c;
+                  _subCategory = null; // reset sub when main changes
+                }),
+                onSubChanged: (s) => setState(() => _subCategory = s),
               ),
               const SizedBox(height: 16),
             ],
-
             Text('AMOUNT (USD)', style: AppTextStyles.label),
             const SizedBox(height: 8),
-            _StyledField(controller: _amountController, hint: '0.00', keyboardType: TextInputType.number),
+            _StyledField(
+                controller: _amountController,
+                hint: '0.00',
+                keyboardType: TextInputType.number),
             const SizedBox(height: 16),
-
             Text('DESCRIPTION', style: AppTextStyles.label),
             const SizedBox(height: 8),
-            _StyledField(controller: _descriptionController, hint: 'Enter transaction details...', maxLines: 3),
+            _StyledField(
+                controller: _descriptionController,
+                hint: 'Enter transaction details...',
+                maxLines: 3),
             const SizedBox(height: 16),
-
             Row(
               children: [
                 Expanded(
@@ -215,7 +229,6 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
               ],
             ),
             const SizedBox(height: 24),
-
             Text('RECENT TRANSACTIONS', style: AppTextStyles.label),
             const SizedBox(height: 12),
             ..._transactions.map((t) => GestureDetector(
@@ -315,10 +328,11 @@ class _TransactionDetailModalState extends State<_TransactionDetailModal> {
             ),
             if (widget.transaction.categoryLabel != null) ...[
               const SizedBox(height: 4),
-              Text('Category: ${widget.transaction.categoryLabel}', style: AppTextStyles.label),
+              Text('Classification: ${widget.transaction.categoryLabel}',
+                  style: AppTextStyles.label),
             ],
             const SizedBox(height: 12),
-            Text('LOGGED BY: ${widget.transaction.addedBy ?? 'System'}', 
+            Text('LOGGED BY: ${widget.transaction.addedBy ?? 'System'}',
                 style: AppTextStyles.label.copyWith(color: AppColors.primary)),
             const Divider(height: 32, color: AppColors.border),
             Row(
@@ -328,7 +342,8 @@ class _TransactionDetailModalState extends State<_TransactionDetailModal> {
                 if (!_isEditing)
                   GestureDetector(
                     onTap: () => setState(() => _isEditing = true),
-                    child: Text('EDIT', style: AppTextStyles.label.copyWith(color: AppColors.primary)),
+                    child: Text('EDIT',
+                        style: AppTextStyles.label.copyWith(color: AppColors.primary)),
                   ),
               ],
             ),
@@ -343,7 +358,8 @@ class _TransactionDetailModalState extends State<_TransactionDetailModal> {
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: AppColors.surface,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -358,7 +374,8 @@ class _TransactionDetailModalState extends State<_TransactionDetailModal> {
               )
             else
               Text(
-                widget.transaction.description ?? 'No detailed information provided for this log entry.',
+                widget.transaction.description ??
+                    'No detailed information provided for this log entry.',
                 style: AppTextStyles.body,
               ),
             const SizedBox(height: 32),
@@ -390,7 +407,8 @@ class _TypeToggleButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: AppTextStyles.label.copyWith(color: selected ? AppColors.onPrimary : AppColors.textMuted),
+          style: AppTextStyles.label
+              .copyWith(color: selected ? AppColors.onPrimary : AppColors.textMuted),
         ),
       ),
     );
@@ -403,7 +421,8 @@ class _StyledField extends StatelessWidget {
   final int maxLines;
   final TextInputType? keyboardType;
 
-  const _StyledField({required this.controller, required this.hint, this.maxLines = 1, this.keyboardType});
+  const _StyledField(
+      {required this.controller, required this.hint, this.maxLines = 1, this.keyboardType});
 
   @override
   Widget build(BuildContext context) {
@@ -417,7 +436,8 @@ class _StyledField extends StatelessWidget {
         hintStyle: AppTextStyles.body.copyWith(color: AppColors.textMuted),
         filled: true,
         fillColor: AppColors.surface,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
       ),
     );
   }
