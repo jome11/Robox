@@ -6,6 +6,7 @@ import 'features/auth/bloc/auth_bloc.dart';
 import 'features/admin/pending_requests/bloc/pending_requests_bloc.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/admin_repository.dart';
+import 'data/repositories/finance_repository.dart';
 
 class RoboxApp extends StatelessWidget {
   const RoboxApp({super.key});
@@ -16,6 +17,7 @@ class RoboxApp extends StatelessWidget {
       providers: [
         RepositoryProvider<AuthRepository>(create: (context) => AuthRepositoryImpl()),
         RepositoryProvider<AdminRepository>(create: (context) => AdminRepositoryImpl()),
+        RepositoryProvider<FinanceRepository>(create: (context) => FinanceRepositoryImpl()),
       ],
       child: MultiBlocProvider(
         providers: [

@@ -6,6 +6,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/robox_button.dart';
 import '../../../../core/widgets/income_category_dropdown.dart';
 import '../../../../data/models/transaction_model.dart';
+import '../../../../data/repositories/finance_repository.dart';
 import '../../../auth/bloc/auth_bloc.dart';
 
 class FinancialManagementScreen extends StatefulWidget {
@@ -16,6 +17,8 @@ class FinancialManagementScreen extends StatefulWidget {
 }
 
 class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
+  final FinanceRepository _financeRepository = FinanceRepositoryImpl();
+
   TransactionType _type = TransactionType.income;
   IncomeCategory? _category;
   String? _subCategory;
@@ -23,40 +26,35 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  // Mock recent transactions.
-  final List<TransactionModel> _transactions = [
-    TransactionModel(
-      id: '1',
-      title: 'Filament restock sale',
-      amount: 1240.00,
-      type: TransactionType.income,
-      date: DateTime.now().subtract(const Duration(hours: 2)),
-      category: IncomeCategory.filament,
-      subCategory: 'PLA FILAMENT',
-      description: 'Bulk purchase of PLA and PETG filament for the robotics lab.',
-      addedBy: 'Jomeme Admin',
-    ),
-    TransactionModel(
-      id: '2',
-      title: 'Grid consumption',
-      amount: 450.00,
-      type: TransactionType.expense,
-      date: DateTime.now().subtract(const Duration(days: 1)),
-      description: 'Monthly electricity bill for the main production floor.',
-      addedBy: 'System Auto-Log',
-    ),
-    TransactionModel(
-      id: '3',
-      title: '3D printer sold',
-      amount: 4800.00,
-      type: TransactionType.income,
-      date: DateTime.now().subtract(const Duration(days: 2)),
-      category: IncomeCategory.threeDMachineSale,
-      subCategory: 'K2 PLUS',
-      description: 'Refurbished Mark II printer sold to local workshop.',
-      addedBy: 'Jomeme Admin',
-    ),
-  ];
+  List<TransactionModel> _transactions = [];
+  bool _isLoading = true;
+  bool _isSubmitting = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
+
+  Future<void> _loadTransactions() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final transactions = await _financeRepository.getAllTransactions();
+      setState(() {
+        _transactions = transactions;
+        _isLoading = false;
+      });
+    } catch (_) {
+      setState(() {
+        _error = 'Could not load transactions. Check your connection.';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -66,41 +64,45 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
     super.dispose();
   }
 
-  void _logEntry() {
+  Future<void> _logEntry() async {
     final amount = double.tryParse(_amountController.text);
     if (amount == null || amount <= 0) return;
     if (_type == TransactionType.income && _category == null) return;
 
-    final authState = context.read<AuthBloc>().state;
-    final userName = authState is AuthAuthenticated ? authState.user.name : 'Unknown Worker';
+    setState(() => _isSubmitting = true);
 
-    setState(() {
-      _transactions.insert(
-        0,
-        TransactionModel(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          title: _type == TransactionType.income 
-              ? (_category?.label ?? 'Income') 
-              : 'Expense',
-          amount: amount,
-          type: _type,
-          date: DateTime.now(),
-          category: _type == TransactionType.income ? _category : null,
-          subCategory: _subCategory,
-          customCategory: _category == IncomeCategory.other ? _customCategoryController.text : null,
-          description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
-          addedBy: userName,
-        ),
+    try {
+      await _financeRepository.createTransaction(
+        title: _type == TransactionType.income ? (_category?.label ?? 'Income') : 'Expense',
+        amount: amount,
+        type: _type,
+        category: _type == TransactionType.income ? _category : null,
+        subCategory: _subCategory,
+        customCategory: _category == IncomeCategory.other ? _customCategoryController.text : null,
+        description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
       );
+
       _amountController.clear();
       _descriptionController.clear();
       _customCategoryController.clear();
-      _category = null;
-      _subCategory = null;
-    });
+      setState(() {
+        _category = null;
+        _subCategory = null;
+      });
+
+      await _loadTransactions();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to log transaction. Please try again.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   Future<void> _pickExcelFile() async {
+    // Note: this is for stock management, not finance — kept as-is for now.
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['xlsx', 'xls'],
@@ -119,25 +121,33 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
     }
   }
 
-  void _updateTransactionDescription(String id, String newDescription) {
-    setState(() {
-      final index = _transactions.indexWhere((t) => t.id == id);
-      if (index != -1) {
-        final t = _transactions[index];
-        _transactions[index] = TransactionModel(
-          id: t.id,
-          title: t.title,
-          amount: t.amount,
-          type: t.type,
-          date: t.date,
-          category: t.category,
-          subCategory: t.subCategory,
-          customCategory: t.customCategory,
-          description: newDescription,
-          addedBy: t.addedBy,
-        );
-      }
-    });
+  Future<void> _updateTransactionDescription(String id, String newDescription) async {
+    try {
+      await _financeRepository.updateDescription(id, newDescription);
+      setState(() {
+        final index = _transactions.indexWhere((t) => t.id == id);
+        if (index != -1) {
+          final t = _transactions[index];
+          _transactions[index] = TransactionModel(
+            id: t.id,
+            title: t.title,
+            amount: t.amount,
+            type: t.type,
+            date: t.date,
+            category: t.category,
+            subCategory: t.subCategory,
+            customCategory: t.customCategory,
+            description: newDescription,
+            addedBy: t.addedBy,
+          );
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save description. Please try again.')),
+      );
+    }
   }
 
   void _showTransactionDetails(TransactionModel transaction) {
@@ -158,84 +168,115 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Finance', style: AppTextStyles.headline),
-            const SizedBox(height: 4),
-            Text('Industrial resource allocation and transaction monitoring.',
-                style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                    child: _TypeToggleButton(
-                  label: 'Income',
-                  selected: _type == TransactionType.income,
-                  onTap: () => setState(() => _type = TransactionType.income),
-                )),
-                const SizedBox(width: 8),
-                Expanded(
-                    child: _TypeToggleButton(
-                  label: 'Expense',
-                  selected: _type == TransactionType.expense,
-                  onTap: () => setState(() => _type = TransactionType.expense),
-                )),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (_type == TransactionType.income) ...[
-              IncomeCategoryDropdown(
-                selected: _category,
-                selectedSub: _subCategory,
-                customController: _customCategoryController,
-                onChanged: (c) => setState(() {
-                  _category = c;
-                  _subCategory = null; // reset sub when main changes
-                }),
-                onSubChanged: (s) => setState(() => _subCategory = s),
+      body: RefreshIndicator(
+        onRefresh: _loadTransactions,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Finance', style: AppTextStyles.headline),
+              const SizedBox(height: 4),
+              Text('Industrial resource allocation and transaction monitoring.',
+                  style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                      child: _TypeToggleButton(
+                        label: 'Income',
+                        selected: _type == TransactionType.income,
+                        onTap: () => setState(() => _type = TransactionType.income),
+                      )),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: _TypeToggleButton(
+                        label: 'Expense',
+                        selected: _type == TransactionType.expense,
+                        onTap: () => setState(() => _type = TransactionType.expense),
+                      )),
+                ],
               ),
               const SizedBox(height: 16),
-            ],
-            Text('AMOUNT (USD)', style: AppTextStyles.label),
-            const SizedBox(height: 8),
-            _StyledField(
-                controller: _amountController,
-                hint: '0.00',
-                keyboardType: TextInputType.number),
-            const SizedBox(height: 16),
-            Text('DESCRIPTION', style: AppTextStyles.label),
-            const SizedBox(height: 8),
-            _StyledField(
-                controller: _descriptionController,
-                hint: 'Enter transaction details...',
-                maxLines: 3),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: RoboxButton(label: 'Log Transaction', onPressed: _logEntry),
+              if (_type == TransactionType.income) ...[
+                IncomeCategoryDropdown(
+                  selected: _category,
+                  selectedSub: _subCategory,
+                  customController: _customCategoryController,
+                  onChanged: (c) => setState(() {
+                    _category = c;
+                    _subCategory = null;
+                  }),
+                  onSubChanged: (s) => setState(() => _subCategory = s),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: RoboxButton(
-                    label: 'UPLOAD EXCEL',
-                    onPressed: _pickExcelFile,
-                    isSecondary: true,
-                  ),
-                ),
+                const SizedBox(height: 16),
               ],
-            ),
-            const SizedBox(height: 24),
-            Text('RECENT TRANSACTIONS', style: AppTextStyles.label),
-            const SizedBox(height: 12),
-            ..._transactions.map((t) => GestureDetector(
-                  onTap: () => _showTransactionDetails(t),
-                  child: _TransactionTile(transaction: t),
-                )),
-          ],
+              Text('AMOUNT (ETB)', style: AppTextStyles.label),
+              const SizedBox(height: 8),
+              _StyledField(
+                  controller: _amountController,
+                  hint: '0.00',
+                  keyboardType: TextInputType.number),
+              const SizedBox(height: 16),
+              Text('DESCRIPTION', style: AppTextStyles.label),
+              const SizedBox(height: 8),
+              _StyledField(
+                  controller: _descriptionController,
+                  hint: 'Enter transaction details...',
+                  maxLines: 3),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: RoboxButton(
+                      label: _isSubmitting ? 'Logging...' : 'Log Transaction',
+                      onPressed: _isSubmitting ? () {} : _logEntry,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: RoboxButton(
+                      label: 'UPLOAD EXCEL',
+                      onPressed: _pickExcelFile,
+                      isSecondary: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text('RECENT TRANSACTIONS', style: AppTextStyles.label),
+              const SizedBox(height: 12),
+              if (_isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_error!, style: AppTextStyles.body.copyWith(color: Colors.red)),
+                      const SizedBox(height: 8),
+                      TextButton(onPressed: _loadTransactions, child: const Text('Retry')),
+                    ],
+                  ),
+                )
+              else if (_transactions.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text('No transactions logged yet.',
+                        style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
+                  )
+                else
+                  ..._transactions.map((t) => GestureDetector(
+                    onTap: () => _showTransactionDetails(t),
+                    child: _TransactionTile(transaction: t),
+                  )),
+            ],
+          ),
         ),
       ),
     );
@@ -319,7 +360,7 @@ class _TransactionDetailModalState extends State<_TransactionDetailModal> {
                   child: Text(widget.transaction.title, style: AppTextStyles.headline),
                 ),
                 Text(
-                  '${isIncome ? '+' : '-'}\$${widget.transaction.amount.toStringAsFixed(2)}',
+                  '${isIncome ? '+' : '-'}ETB ${widget.transaction.amount.toStringAsFixed(2)}',
                   style: AppTextStyles.headline.copyWith(
                     color: isIncome ? AppColors.primary : AppColors.error,
                   ),
@@ -489,7 +530,7 @@ class _TransactionTile extends StatelessWidget {
             ),
           ),
           Text(
-            '${isIncome ? '+' : '-'}\$${transaction.amount.toStringAsFixed(2)}',
+            '${isIncome ? '+' : '-'}ETB ${transaction.amount.toStringAsFixed(2)}',
             style: AppTextStyles.body.copyWith(
               color: isIncome ? AppColors.primary : AppColors.error,
               fontWeight: FontWeight.w600,

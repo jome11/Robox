@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/robox_button.dart';
 import '../../../../core/widgets/stat_strip.dart';
 import '../../../../data/models/task_model.dart';
+import '../../../../data/models/inventory_item.dart';
+import '../../../../data/models/financial_record.dart';
 import '../../../../data/repositories/admin_repository.dart';
 import '../../../../data/repositories/task_repository.dart';
+import '../helpers/dashboard_data_helper.dart';
+import '../widgets/financial_comparison_chart.dart';
+import '../widgets/inventory_breakdown_list.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -24,6 +28,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final AdminRepository _adminRepository = AdminRepositoryImpl();
 
   List<TaskModel> _tasks = [];
+  List<InventoryItem> _inventory = [];
+  List<FinancialRecord> _financialData = [];
   int _workerCount = 0;
   bool _isLoading = true;
   String? _error;
@@ -47,6 +53,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       setState(() {
         _tasks = results[0] as List<TaskModel>;
         _workerCount = (results[1] as List<Map<String, String>>).length;
+        _inventory = DashboardDataHelper.getOpeningStock();
+        _financialData = DashboardDataHelper.generateFinancialData();
         _isLoading = false;
       });
     } catch (_) {
@@ -147,7 +155,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ]),
                   const SizedBox(height: 24),
 
-                  Text('FINANCIAL OVERVIEW', style: AppTextStyles.label),
+                  Text('FINANCIAL TREND (INCOME VS EXPENSE)', style: AppTextStyles.label),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _LegendItem(label: 'Income', color: AppColors.primary),
+                      const SizedBox(width: 16),
+                      _LegendItem(label: 'Expense', color: AppColors.error),
+                    ],
+                  ),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -157,36 +173,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       border: Border.all(color: AppColors.border),
                     ),
                     child: SizedBox(
-                      height: 180,
-                      child: LineChart(
-                        LineChartData(
-                          gridData: const FlGridData(show: false),
-                          titlesData: const FlTitlesData(show: false),
-                          borderData: FlBorderData(show: false),
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: const [
-                                FlSpot(0, 3),
-                                FlSpot(2, 4),
-                                FlSpot(4, 3.5),
-                                FlSpot(6, 5),
-                                FlSpot(8, 4.5),
-                                FlSpot(10, 6),
-                              ],
-                              isCurved: true,
-                              color: AppColors.primary,
-                              barWidth: 3,
-                              dotData: const FlDotData(show: false),
-                              belowBarData: BarAreaData(
-                                show: true,
-                                color: AppColors.primary.withAlpha((0.12 * 255).toInt()),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      height: 200,
+                      child: FinancialComparisonChart(data: _financialData),
                     ),
                   ),
+                  const SizedBox(height: 24),
+
+                  Text('INVENTORY BREAKDOWN', style: AppTextStyles.label),
+                  const SizedBox(height: 12),
+                  InventoryBreakdownList(items: _inventory),
                   const SizedBox(height: 24),
 
                   RoboxButton(
@@ -251,6 +246,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _LegendItem({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 4),
+        Text(label, style: AppTextStyles.label.copyWith(fontSize: 10)),
+      ],
     );
   }
 }

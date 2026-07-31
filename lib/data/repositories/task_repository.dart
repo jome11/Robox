@@ -16,6 +16,7 @@ abstract class TaskRepository {
     required List<String> workerIds,
   });
   Future<void> updateProgress(String taskId, double progress, TaskStatus status);
+  Future<void> deleteTask(String taskId);
 }
 
 class TaskRepositoryImpl implements TaskRepository {
@@ -138,5 +139,15 @@ class TaskRepositoryImpl implements TaskRepository {
       }),
     );
     if (response.statusCode != 200) throw Exception('UPDATE_PROGRESS_FAILED');
+  }
+
+  @override
+  Future<void> deleteTask(String taskId) async {
+    final headers = await _authHeaders();
+    final response = await http.delete(
+      Uri.parse('${ApiConstants.baseUrl}/worker/tasks/$taskId'),
+      headers: headers,
+    );
+    if (response.statusCode != 200) throw Exception('DELETE_TASK_FAILED');
   }
 }
