@@ -1,39 +1,28 @@
-# Walkthrough - Self-Registration with Admin Approval
+# Walkthrough - Task Management Enhancements
 
-I have implemented the full "Self-Registration with Admin Approval" flow, adhering to the project's MVVM + BLoC architecture and design system.
+I have updated the task management system with an enhanced data model and a functional deadline picker for administrators.
 
-## Key Changes
+## Changes Made
 
-### 1. Registration Workflow (Worker)
-- **[SignupScreen](file:///C:/Users/PAVILION/Desktop/Robox/lib/features/auth/view/signup_screen.dart)**: A new registration screen for operators.
-    - Includes name, email, and password (with confirmation) fields.
-    - Full client-side validation (regex for email, minimum password length, and match check).
-    - Distinct error handling for "Email Already Registered" and "Request Already Pending".
-- **[PendingApprovalScreen](file:///C:/Users/PAVILION/Desktop/Robox/lib/features/auth/view/pending_approval_screen.dart)**: A clean information screen shown after successful registration, directing users back to login.
+### 1. Data Model Upgrade
+- **[task_model.dart](file:///C:/Users/PAVILION/Desktop/Robox/lib/data/models/task_model.dart)**:
+    - Introduced the `AssignedWorker` class to track individual worker details (ID and Name).
+    - Enhanced `TaskModel` with an `assignedWorkers` list, enabling multi-user assignment for group tasks.
+    - Preserved existing fields (`title`, `description`, `deadline`, `priority`, etc.) for backward compatibility.
 
-### 2. Admin Management (Admin)
-- **[PendingRequestsScreen](file:///C:/Users/PAVILION/Desktop/Robox/lib/features/admin/pending_requests/view/pending_requests_screen.dart)**: A dedicated management interface for administrators.
-    - View all pending registrations with names, emails, and request timestamps.
-    - One-tap Approval and Rejection (with confirmation dialog).
-    - Success/Error snackbar feedback.
-- **Admin Dashboard Integration**: Added a dynamic notification badge on the Admin Dashboard that displays the current count of pending requests.
-
-### 3. Core Enhancements
-- **Multi-Role Login Logic**: Updated the `LoginScreen` and `AuthBloc` to specifically identify and communicate when an account is still awaiting administrator approval.
-- **Centralized Repositories**: Integrated `AuthRepository` updates and a new `AdminRepository` into the global provider tree.
-- **State Management**: Implemented `SignupBloc` and `PendingRequestsBloc` following the established event/state pattern.
+### 2. Admin Feature: Deadline Picker
+- **[task_allocation_screen.dart](file:///C:/Users/PAVILION/Desktop/Robox/lib/features/admin/task_allocation/view/task_allocation_screen.dart)**:
+    - **Interactive Calendar**: Added a "DEADLINE" section that opens the native system date picker.
+    - **Selection Feedback**: The selected date is displayed in a clean `yyyy-MM-dd` format.
+    - **Validation**: Added a check to ensure a deadline is selected before a task can be assigned.
+    - **Industrial Styling**: The picker uses the application's primary blue theme for a consistent "Worker OS" look.
 
 ## Verification Results
 
-### Logic & Flow
-- [x] **Signup Validation**: Mismatched passwords or invalid emails are caught before submission.
-- [x] **Approval Lifecycle**: Approving or Rejecting a request updates the UI list instantly.
-- [x] **Dashboard Badge**: The badge automatically updates as requests are processed.
+### Data Integration
+- [x] `TaskRepository` successfully parses the new `assignedWorkers` structure from JSON.
+- [x] `flutter analyze` passed with no compilation errors.
 
-### UI/UX Consistency
-- [x] All new screens utilize the "White-and-Blue" light theme.
-- [x] Button states (Loading spinners/indicators) are implemented for all network simulations.
-- [x] Clean empty states for the pending requests list.
-
-> [!TIP]
-> To test the "Pending Approval" login message, use the email `pending@robox.ai`. To test existing email errors in signup, use `exists@robox.ai`.
+### UI Verification
+- [x] Admins can now select a future date as a task deadline.
+- [x] The deadline field follows the established "White-and-Blue" light theme.

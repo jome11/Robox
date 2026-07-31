@@ -1,6 +1,13 @@
 enum TaskPriority { low, medium, high }
 enum TaskStatus { pending, inProgress, completed }
 
+class AssignedWorker {
+  final String id;
+  final String name;
+
+  const AssignedWorker({required this.id, required this.name});
+}
+
 class TaskModel {
   final String id;
   final String title;
@@ -10,6 +17,7 @@ class TaskModel {
   final TaskStatus status;
   final double progress; // 0.0 to 1.0
   final bool isGroupTask;
+  final List<AssignedWorker> assignedWorkers;
 
   const TaskModel({
     required this.id,
@@ -20,5 +28,6 @@ class TaskModel {
     required this.status,
     required this.progress,
     this.isGroupTask = false,
+    this.assignedWorkers = const [],
   });
 }

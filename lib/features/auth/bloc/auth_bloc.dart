@@ -23,7 +23,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (e.toString().contains('ACCOUNT_PENDING')) {
           emit(const AuthError('Your account is still pending admin approval'));
         } else {
-          emit(const AuthError('An unexpected error occurred'));
+          emit(AuthError('Network error: ${e.toString()}'));
         }
       }
     });

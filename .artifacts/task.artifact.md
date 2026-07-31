@@ -1,8 +1,6 @@
-# Tasks - Self-Registration with Admin Approval
+# Tasks - Fix Navigation and UI Overflow
 
-- [x] Data Layer: `PendingRequestModel`, `AuthRepository` updates, `AdminRepository`
-- [x] BLoC Layer: `SignupBloc`, `PendingRequestsBloc`
-- [x] Auth UI: `SignupScreen`, `PendingApprovalScreen`, `LoginScreen` updates
-- [x] Admin UI: `PendingRequestsScreen`, `AdminDashboardScreen` updates
-- [x] Core: `AppRouter` updates
-- [x] Final Wiring and Verification
+- [x] Change `push` to `go` in `AdminDashboardScreen`
+- [ ] Fix `_TransactionTile` overflow in `FinancialManagementScreen`
+- [ ] Fix `_TransactionTile` overflow in `WorkerFinanceScreen`
+- [ ] Final Verification

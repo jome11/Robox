@@ -80,23 +80,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                         ),
                         Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              child: Text(
-                                entry.password,
-                                style: AppTextStyles.label.copyWith(
-                                  color: AppColors.secondary,
-                                  fontFamily: 'JetBrainsMono',
-                                ),
-                              ),
-                            ),
                             if (entry.userName != 'You') ...[
-                              const SizedBox(width: 8),
                               IconButton(
                                 icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
                                 onPressed: () {

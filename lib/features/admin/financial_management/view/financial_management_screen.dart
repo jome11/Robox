@@ -446,10 +446,14 @@ class _TransactionTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(transaction.title, style: AppTextStyles.body),
-                Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     if (transaction.categoryLabel != null)
-                      Text(transaction.categoryLabel!, style: AppTextStyles.label),
+                      Text(
+                        transaction.categoryLabel!,
+                        style: AppTextStyles.label,
+                      ),
                     if (transaction.categoryLabel != null)
                       Text(' · ', style: AppTextStyles.label),
                     Opacity(
