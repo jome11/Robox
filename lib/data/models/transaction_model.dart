@@ -34,6 +34,7 @@ class TransactionModel {
   final IncomeCategory? category; // only set when type == income
   final String? subCategory; // nested selection based on category
   final String? customCategory; // set when category == other
+  final int? quantity; // Optional field for stock tracking
   final String? description;
   final String? addedBy;
 
@@ -46,6 +47,7 @@ class TransactionModel {
     this.category,
     this.subCategory,
     this.customCategory,
+    this.quantity,
     this.description,
     this.addedBy,
   });

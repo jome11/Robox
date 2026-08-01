@@ -115,6 +115,7 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
             category: t.category,
             subCategory: t.subCategory,
             customCategory: t.customCategory,
+            quantity: t.quantity,
             description: newDescription,
             addedBy: t.addedBy,
           );

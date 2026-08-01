@@ -14,6 +14,7 @@ abstract class FinanceRepository {
     IncomeCategory? category,
     String? subCategory,
     String? customCategory,
+    int? quantity,
     String? description,
   });
   Future<void> updateDescription(String transactionId, String description);
@@ -45,6 +46,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
             ),
       subCategory: json['subCategory'] as String?,
       customCategory: json['customCategory'] as String?,
+      quantity: json['quantity'] as int?,
       description: json['description'] as String?,
       addedBy: json['addedBy'] as String?,
     );
@@ -84,6 +86,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
     IncomeCategory? category,
     String? subCategory,
     String? customCategory,
+    int? quantity,
     String? description,
   }) async {
     final headers = await _authHeaders();
@@ -97,6 +100,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
         'category': category?.name,
         'subCategory': subCategory,
         'customCategory': customCategory,
+        'quantity': quantity,
         'description': description,
       }),
     );

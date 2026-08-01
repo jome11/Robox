@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:excel/excel.dart' as excel_pkg;
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/robox_button.dart';
 import '../../../../core/widgets/income_category_dropdown.dart';
 import '../../../../data/models/transaction_model.dart';
 import '../../../../data/repositories/finance_repository.dart';
-import '../../../auth/bloc/auth_bloc.dart';
+import '../../../../data/repositories/stock_repository.dart';
 
 class FinancialManagementScreen extends StatefulWidget {
   const FinancialManagementScreen({super.key});
@@ -18,12 +18,14 @@ class FinancialManagementScreen extends StatefulWidget {
 
 class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
   final FinanceRepository _financeRepository = FinanceRepositoryImpl();
+  final StockRepository _stockRepository = StockRepositoryImpl();
 
   TransactionType _type = TransactionType.income;
   IncomeCategory? _category;
   String? _subCategory;
   final _customCategoryController = TextEditingController();
   final _amountController = TextEditingController();
+  final _quantityController = TextEditingController();
   final _descriptionController = TextEditingController();
 
   List<TransactionModel> _transactions = [];
@@ -60,6 +62,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
   void dispose() {
     _customCategoryController.dispose();
     _amountController.dispose();
+    _quantityController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -68,6 +71,8 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
     final amount = double.tryParse(_amountController.text);
     if (amount == null || amount <= 0) return;
     if (_type == TransactionType.income && _category == null) return;
+
+    final quantity = int.tryParse(_quantityController.text);
 
     setState(() => _isSubmitting = true);
 
@@ -79,10 +84,12 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
         category: _type == TransactionType.income ? _category : null,
         subCategory: _subCategory,
         customCategory: _category == IncomeCategory.other ? _customCategoryController.text : null,
+        quantity: quantity,
         description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
       );
 
       _amountController.clear();
+      _quantityController.clear();
       _descriptionController.clear();
       _customCategoryController.clear();
       setState(() {
@@ -102,21 +109,59 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
   }
 
   Future<void> _pickExcelFile() async {
-    // Note: this is for stock management, not finance — kept as-is for now.
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['xlsx', 'xls'],
+      withData: true,
     );
 
     if (result != null) {
-      final fileName = result.files.single.name;
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Excel file selected: $fileName'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+      final fileBytes = result.files.single.bytes;
+      if (fileBytes == null) return;
+
+      setState(() => _isSubmitting = true);
+      try {
+        final excel = excel_pkg.Excel.decodeBytes(fileBytes);
+        final List<Map<String, dynamic>> items = [];
+
+        // Simple parsing: Assuming sheet 1, headers NO, ITEM, QTY, PRICE
+        for (var table in excel.tables.keys) {
+          final sheet = excel.tables[table]!;
+          // Skip header row
+          for (int i = 1; i < sheet.maxRows; i++) {
+            final row = sheet.rows[i];
+            if (row.length < 4) continue;
+            
+            final name = row[1]?.value?.toString();
+            final qty = int.tryParse(row[2]?.value?.toString() ?? '');
+            final price = double.tryParse(row[3]?.value?.toString() ?? '');
+
+            if (name != null && qty != null && price != null) {
+              items.add({
+                'name': name,
+                'quantity': qty,
+                'price': price,
+              });
+            }
+          }
+        }
+
+        if (items.isNotEmpty) {
+          await _stockRepository.restock(items);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Inventory restocked successfully')),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to parse Excel: $e')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isSubmitting = false);
       }
     }
   }
@@ -137,6 +182,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
             category: t.category,
             subCategory: t.subCategory,
             customCategory: t.customCategory,
+            quantity: t.quantity,
             description: newDescription,
             addedBy: t.addedBy,
           );
@@ -211,6 +257,16 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
                   onSubChanged: (s) => setState(() => _subCategory = s),
                 ),
                 const SizedBox(height: 16),
+                if (_category == IncomeCategory.threeDMachineSale || _category == IncomeCategory.filament) ...[
+                  Text('QUANTITY SOLD', style: AppTextStyles.label),
+                  const SizedBox(height: 8),
+                  _StyledField(
+                    controller: _quantityController,
+                    hint: '0',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ],
               Text('AMOUNT (ETB)', style: AppTextStyles.label),
               const SizedBox(height: 8),
