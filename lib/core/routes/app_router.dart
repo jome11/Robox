@@ -9,6 +9,7 @@ import '../../features/admin/dashboard/view/admin_dashboard_screen.dart';
 import '../../features/worker/dashboard/view/worker_dashboard_screen.dart';
 
 import '../../features/admin/task_allocation/view/task_allocation_screen.dart';
+import '../../features/admin/task_allocation/view/create_task_screen.dart';
 import '../../features/admin/financial_management/view/financial_management_screen.dart';
 import '../../features/shared/leaderboard/view/leaderboard_screen.dart';
 import '../../features/worker/my_tasks/view/my_tasks_screen.dart';
@@ -75,6 +76,12 @@ class AppRouter {
                 GoRoute(
                   path: '/admin/tasks',
                   builder: (context, state) => const TaskAllocationScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'create',
+                      builder: (context, state) => const CreateTaskScreen(),
+                    ),
+                  ],
                 ),
               ],
             ),

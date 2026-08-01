@@ -17,13 +17,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (user != null) {
           emit(AuthAuthenticated(user));
         } else {
-          emit(const AuthError('Invalid credentials'));
+          emit(const AuthError('Invalid credentials. Please check your email and password.'));
         }
       } catch (e) {
-        if (e.toString().contains('ACCOUNT_PENDING')) {
-          emit(const AuthError('Your account is still pending admin approval'));
+        final error = e.toString();
+        if (error.contains('ACCOUNT_PENDING')) {
+          emit(const AuthError('Your account is still pending admin approval.'));
+        } else if (error.contains('TimeoutException') || error.contains('SocketException')) {
+          emit(const AuthError('Connection failed. Please check your network or server status.'));
         } else {
-          emit(AuthError('Network error: ${e.toString()}'));
+          emit(AuthError('Authentication error: ${error.replaceAll('Exception: ', '')}'));
         }
       }
     });

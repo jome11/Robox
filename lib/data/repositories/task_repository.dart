@@ -40,23 +40,28 @@ class TaskRepositoryImpl implements TaskRepository {
             (p) => p.name == json['priority'],
         orElse: () => TaskPriority.medium,
       ),
-      status: _statusFromString(json['status'] as String),
+      status: _statusFromString(json['status'].toString()),
       progress: (json['progress'] as num).toDouble(),
-      isGroupTask: json['isGroupTask'] as bool? ?? false,
+      isGroupTask: json['isGroupTask'] == true || json['isGroupTask'] == 1,
       assignedWorkers: (json['assignedWorkers'] as List<dynamic>? ?? [])
-          .map((w) => AssignedWorker(
-        id: (w as Map<String, dynamic>)['id'] as String,
-        name: w['name'] as String,
-      ))
-          .toList(),
+          .map((w) {
+        final workerMap = w as Map<String, dynamic>;
+        return AssignedWorker(
+          id: workerMap['id'].toString(),
+          name: workerMap['name']?.toString() ?? 'Unknown',
+        );
+      }).toList(),
     );
   }
 
   TaskStatus _statusFromString(String s) {
-    switch (s) {
+    final status = s.toLowerCase();
+    switch (status) {
       case 'in_progress':
+      case 'inprogress':
         return TaskStatus.inProgress;
       case 'completed':
+      case 'finished':
         return TaskStatus.completed;
       default:
         return TaskStatus.pending;
@@ -77,29 +82,40 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Future<List<TaskModel>> getTasks() async {
     final headers = await _authHeaders();
-    final response = await http.get(
-      Uri.parse('${ApiConstants.baseUrl}/worker/tasks'),
-      headers: headers,
-    );
+    final url = Uri.parse('${ApiConstants.baseUrl}/worker/tasks');
+    
+    final response = await http.get(url, headers: headers);
     if (response.statusCode != 200) throw Exception('FAILED_TO_LOAD_TASKS');
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final tasks = data['tasks'] as List<dynamic>;
-    return tasks.map((t) => _fromJson(t as Map<String, dynamic>)).toList();
+    final tasksJson = data['tasks'] as List<dynamic>;
+    
+    print('TASK_DEBUG: RAW JSON FROM SERVER: ${response.body}');
+
+    return tasksJson.map((t) => _fromJson(t as Map<String, dynamic>)).toList();
   }
 
   @override
   Future<List<TaskModel>> getAllTasks() async {
     final headers = await _authHeaders();
-    final response = await http.get(
-      Uri.parse('${ApiConstants.baseUrl}/admin/tasks'),
-      headers: headers,
-    );
-    if (response.statusCode != 200) throw Exception('FAILED_TO_LOAD_TASKS');
+    final url = Uri.parse('${ApiConstants.baseUrl}/admin/tasks');
+    print('TASK_LOG: Fetching admin tasks from: $url');
+
+    final response = await http.get(url, headers: headers);
+    print('TASK_LOG: Admin Tasks Status: ${response.statusCode}');
+
+    if (response.statusCode != 200) {
+      print('TASK_LOG: Error: ${response.body}');
+      throw Exception('FAILED_TO_LOAD_TASKS');
+    }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final tasks = data['tasks'] as List<dynamic>;
-    return tasks.map((t) => _fromJson(t as Map<String, dynamic>)).toList();
+    return tasks.map((t) {
+      final task = _fromJson(t as Map<String, dynamic>);
+      print('TASK_LOG: Admin Task: ${task.title}, Status: ${t['status']}');
+      return task;
+    }).toList();
   }
 
   @override

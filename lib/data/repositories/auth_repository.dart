@@ -14,31 +14,43 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserModel?> login(String email, String password) async {
-    final response = await http.post(
-      Uri.parse('${ApiConstants.baseUrl}/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
-    );
+    final url = Uri.parse('${ApiConstants.baseUrl}/login');
+    print('AUTH_LOG: Attempting login to: $url');
+    print('AUTH_LOG: Payload: {"email": "$email"}'); // Don't log password
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      ).timeout(const Duration(seconds: 10));
 
-    if (response.statusCode == 200) {
-      await _storage.write(key: 'jwt_token', value: data['token'] as String);
+      print('AUTH_LOG: Response Status: ${response.statusCode}');
+      print('AUTH_LOG: Response Body: ${response.body}');
 
-      final user = data['user'] as Map<String, dynamic>;
-      return UserModel(
-        id: user['id'] as String,
-        name: user['name'] as String,
-        email: user['email'] as String,
-        role: user['role'] == 'admin' ? UserRole.admin : UserRole.worker,
-      );
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200) {
+        await _storage.write(key: 'jwt_token', value: data['token'] as String);
+
+        final user = data['user'] as Map<String, dynamic>;
+        return UserModel(
+          id: user['id'].toString(),
+          name: user['name']?.toString() ?? 'Unknown',
+          email: user['email']?.toString() ?? '',
+          role: user['role'] == 'admin' ? UserRole.admin : UserRole.worker,
+        );
+      }
+
+      if (data['error'] == 'ACCOUNT_PENDING') {
+        throw Exception('ACCOUNT_PENDING');
+      }
+
+      return null;
+    } catch (e) {
+      print('AUTH_LOG: Exception during login: $e');
+      rethrow;
     }
-
-    if (data['error'] == 'ACCOUNT_PENDING') {
-      throw Exception('ACCOUNT_PENDING');
-    }
-
-    return null; // INVALID_CREDENTIALS or anything else -> null, same as before
   }
 
   @override

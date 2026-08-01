@@ -46,6 +46,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       _error = null;
     });
     try {
+      // Trigger pending requests fetch in the bloc so the badge updates
+      if (mounted) {
+        context.read<PendingRequestsBloc>().add(FetchPendingRequests());
+      }
+
       final results = await Future.wait([
         _taskRepository.getAllTasks(),
         _adminRepository.getWorkers(),

@@ -25,12 +25,14 @@ class AdminRepositoryImpl implements AdminRepository {
   @override
   Future<List<PendingRequestModel>> getPendingRequests() async {
     final headers = await _authHeaders();
-    final response = await http.get(
-      Uri.parse('${ApiConstants.baseUrl}/admin/pending-requests'),
-      headers: headers,
-    );
+    final url = Uri.parse('${ApiConstants.baseUrl}/admin/pending-requests');
+    print('ADMIN_LOG: Fetching pending requests from: $url');
+    
+    final response = await http.get(url, headers: headers);
 
+    print('ADMIN_LOG: Pending Requests Status: ${response.statusCode}');
     if (response.statusCode != 200) {
+      print('ADMIN_LOG: Error Body: ${response.body}');
       throw Exception('FAILED_TO_LOAD_REQUESTS');
     }
 

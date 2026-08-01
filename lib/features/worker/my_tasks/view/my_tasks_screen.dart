@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -6,6 +7,7 @@ import '../../../../core/widgets/priority_tag.dart';
 import '../../../../core/widgets/robox_button.dart';
 import '../../../../data/models/task_model.dart';
 import '../../../../data/repositories/task_repository.dart';
+import '../../../auth/bloc/auth_bloc.dart';
 
 class MyTasksScreen extends StatefulWidget {
   const MyTasksScreen({super.key});
@@ -17,7 +19,8 @@ class MyTasksScreen extends StatefulWidget {
 class _MyTasksScreenState extends State<MyTasksScreen> {
   final TaskRepository _taskRepository = TaskRepositoryImpl();
 
-  List<TaskModel> _tasks = [];
+  List<TaskModel> _ongoingTasks = [];
+  List<TaskModel> _completedTasks = [];
   bool _isLoading = true;
   String? _error;
 
@@ -28,17 +31,33 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
   }
 
   Future<void> _loadTasks() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        throw Exception('NOT_AUTHENTICATED');
+      }
+      final currentUserId = authState.user.id.toString();
+      print('DEBUG: Current User ID: $currentUserId');
+
       final tasks = await _taskRepository.getTasks();
+      
+      // Trust the backend /worker/tasks endpoint to only return relevant tasks.
+      // Removed the manual ID filter to prevent issues with ID type mismatches.
+      final assignedTasks = tasks;
+      
+      if (!mounted) return;
       setState(() {
-        _tasks = tasks;
+        _ongoingTasks = assignedTasks.where((t) => t.status != TaskStatus.completed).toList();
+        _completedTasks = assignedTasks.where((t) => t.status == TaskStatus.completed).toList();
         _isLoading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _error = 'Could not load your tasks. Check your connection.';
         _isLoading = false;
@@ -46,25 +65,12 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
     }
   }
 
-  Future<void> _setProgress(int index, double value) async {
-    final task = _tasks[index];
+  Future<void> _setProgress(TaskModel task, double value) async {
     final newStatus = value >= 1.0 ? TaskStatus.completed : TaskStatus.inProgress;
 
     try {
       await _taskRepository.updateProgress(task.id, value, newStatus);
-      setState(() {
-        _tasks[index] = TaskModel(
-          id: task.id,
-          title: task.title,
-          description: task.description,
-          deadline: task.deadline,
-          priority: task.priority,
-          status: newStatus,
-          progress: value,
-          isGroupTask: task.isGroupTask,
-          assignedWorkers: task.assignedWorkers,
-        );
-      });
+      _loadTasks(); // Reload all to move between tabs correctly
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,11 +79,10 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
     }
   }
 
-  Future<void> _removeTask(int index) async {
-    final task = _tasks[index];
+  Future<void> _removeTask(TaskModel task) async {
     try {
       await _taskRepository.deleteTask(task.id);
-      setState(() => _tasks.removeAt(index));
+      _loadTasks();
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -166,63 +171,107 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadTasks,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('My Tasks', style: AppTextStyles.headline),
-              const SizedBox(height: 4),
-
-              if (_isLoading) ...[
-                const SizedBox(height: 40),
-                const Center(child: CircularProgressIndicator()),
-              ] else if (_error != null) ...[
-                const SizedBox(height: 8),
-                Text(_error!, style: AppTextStyles.body.copyWith(color: Colors.red)),
-                const SizedBox(height: 8),
-                TextButton(onPressed: _loadTasks, child: const Text('Retry')),
-              ] else ...[
-                Text('${_tasks.length} tasks assigned to you',
-                    style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
-                const SizedBox(height: 20),
-                if (_tasks.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 40),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(Icons.task_alt, size: 48, color: AppColors.textMuted.withAlpha(100)),
-                          const SizedBox(height: 12),
-                          Text('No task assigned',
-                              style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
-                        ],
-                      ),
-                    ),
-                  )
-                else
-                  ...List.generate(_tasks.length, (index) {
-                    final task = _tasks[index];
-                    return GestureDetector(
-                      onTap: () => _showTaskDetails(task),
-                      child: _TaskCard(
-                        task: task,
-                        onSetProgress: (v) => _setProgress(index, v),
-                        onRemove: task.status == TaskStatus.completed
-                            ? () => _removeTask(index)
-                            : null,
-                      ),
-                    );
-                  }),
-              ],
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('MY TASKS', style: AppTextStyles.label),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          bottom: TabBar(
+            indicatorColor: AppColors.primary,
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.textMuted,
+            labelStyle: AppTextStyles.label,
+            tabs: const [
+              Tab(text: 'ONGOING'),
+              Tab(text: 'COMPLETED'),
             ],
           ),
         ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(_error!, style: AppTextStyles.body.copyWith(color: Colors.red)),
+                        const SizedBox(height: 12),
+                        TextButton(onPressed: _loadTasks, child: const Text('Retry')),
+                      ],
+                    ),
+                  )
+                : TabBarView(
+                    children: [
+                      RefreshIndicator(
+                        onRefresh: _loadTasks,
+                        child: _TaskList(
+                          tasks: _ongoingTasks,
+                          onSetProgress: _setProgress,
+                          onShowDetails: _showTaskDetails,
+                        ),
+                      ),
+                      RefreshIndicator(
+                        onRefresh: _loadTasks,
+                        child: _TaskList(
+                          tasks: _completedTasks,
+                          onSetProgress: _setProgress,
+                          onShowDetails: _showTaskDetails,
+                          onRemove: _removeTask,
+                        ),
+                      ),
+                    ],
+                  ),
       ),
+    );
+  }
+}
+
+class _TaskList extends StatelessWidget {
+  final List<TaskModel> tasks;
+  final Function(TaskModel, double) onSetProgress;
+  final Function(TaskModel) onShowDetails;
+  final Function(TaskModel)? onRemove;
+
+  const _TaskList({
+    required this.tasks,
+    required this.onSetProgress,
+    required this.onShowDetails,
+    this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (tasks.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Center(
+              child: Text('No tasks found', style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      itemCount: tasks.length,
+      itemBuilder: (context, index) {
+        final task = tasks[index];
+        return GestureDetector(
+          onTap: () => onShowDetails(task),
+          child: _TaskCard(
+            task: task,
+            onSetProgress: (v) => onSetProgress(task, v),
+            onRemove: onRemove != null ? () => onRemove!(task) : null,
+          ),
+        );
+      },
     );
   }
 }
@@ -255,14 +304,14 @@ class _TaskCard extends StatelessWidget {
               PriorityTag(priority: task.priority),
               Text(
                 'Due ${task.deadline.year}-${task.deadline.month.toString().padLeft(2, '0')}-${task.deadline.day.toString().padLeft(2, '0')}',
-                style: AppTextStyles.label,
+                style: AppTextStyles.label.copyWith(fontSize: 10),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(task.title, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600, fontSize: 16)),
           const SizedBox(height: 4),
-          Text(task.description, style: AppTextStyles.label),
+          Text(task.description, style: AppTextStyles.label, maxLines: 2, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
@@ -282,7 +331,7 @@ class _TaskCard extends StatelessWidget {
               alignment: WrapAlignment.spaceBetween,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text('${(task.progress * 100).round()}% complete', style: AppTextStyles.label),
+                Text('${(task.progress * 100).round()}% complete', style: AppTextStyles.label.copyWith(fontSize: 10)),
                 Wrap(
                   spacing: 6,
                   children: _steps.map((step) {
@@ -297,7 +346,7 @@ class _TaskCard extends StatelessWidget {
                         ),
                         child: Text(
                           '${(step * 100).round()}%',
-                          style: AppTextStyles.label.copyWith(color: selected ? AppColors.primary : AppColors.textMuted),
+                          style: AppTextStyles.label.copyWith(color: selected ? AppColors.primary : AppColors.textMuted, fontSize: 10),
                         ),
                       ),
                     );
