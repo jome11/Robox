@@ -32,11 +32,12 @@ class StockRepositoryImpl implements StockRepository {
       throw Exception('FAILED_TO_LOAD_STOCK');
     }
 
-    final List<dynamic> data = jsonDecode(response.body) as List<dynamic>;
-    return data.map((item) {
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final items = data['stock'] as List<dynamic>;
+    return items.map((item) {
       final map = item as Map<String, dynamic>;
       return InventoryItem(
-        name: map['name'] as String,
+        name: map['itemName'] as String,
         quantity: map['quantity'] as int,
         price: (map['price'] as num).toDouble(),
       );
