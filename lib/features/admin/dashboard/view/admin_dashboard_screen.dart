@@ -4,13 +4,13 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/robox_button.dart';
 import '../../../../core/widgets/stat_strip.dart';
 import '../../../../data/models/task_model.dart';
-import '../../../../data/models/inventory_item.dart';
 import '../../../../data/models/financial_record.dart';
+import '../../../../data/models/transaction_model.dart';
 import '../../../../data/repositories/admin_repository.dart';
 import '../../../../data/repositories/task_repository.dart';
+import '../../../../data/repositories/finance_repository.dart';
 import '../helpers/dashboard_data_helper.dart';
 import '../widgets/financial_comparison_chart.dart';
-import '../widgets/inventory_breakdown_list.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -26,9 +26,9 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final TaskRepository _taskRepository = TaskRepositoryImpl();
   final AdminRepository _adminRepository = AdminRepositoryImpl();
+  final FinanceRepository _financeRepository = FinanceRepositoryImpl();
 
   List<TaskModel> _tasks = [];
-  List<InventoryItem> _inventory = [];
   List<FinancialRecord> _financialData = [];
   int _workerCount = 0;
   bool _isLoading = true;
@@ -54,12 +54,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       final results = await Future.wait([
         _taskRepository.getAllTasks(),
         _adminRepository.getWorkers(),
+        _financeRepository.getAllTransactions(),
       ]);
+      final transactions = results[2] as List<TransactionModel>;
       setState(() {
         _tasks = results[0] as List<TaskModel>;
         _workerCount = (results[1] as List<Map<String, String>>).length;
-        _inventory = DashboardDataHelper.getOpeningStock();
-        _financialData = DashboardDataHelper.generateFinancialData();
+        _financialData = DashboardDataHelper.financialRecordsFromTransactions(transactions);
         _isLoading = false;
       });
     } catch (_) {
@@ -182,11 +183,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       child: FinancialComparisonChart(data: _financialData),
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  Text('INVENTORY BREAKDOWN', style: AppTextStyles.label),
-                  const SizedBox(height: 12),
-                  InventoryBreakdownList(items: _inventory),
                   const SizedBox(height: 24),
 
                   RoboxButton(
