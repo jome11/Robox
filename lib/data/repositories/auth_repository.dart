@@ -57,19 +57,30 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> signup(String name, String email, String password) async {
-    final response = await http.post(
-      Uri.parse('${ApiConstants.baseUrl}/signup'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'email': email, 'password': password}),
-    );
+    final url = Uri.parse('${ApiConstants.baseUrl}/signup');
+    print('AUTH_LOG: Attempting signup to: $url');
 
-    if (response.statusCode == 200) return;
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'name': name, 'email': email, 'password': password}),
+      ).timeout(const Duration(seconds: 10));
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (data['error'] == 'EMAIL_EXISTS') throw Exception('EMAIL_EXISTS');
-    if (data['error'] == 'EMAIL_PENDING') throw Exception('EMAIL_PENDING');
+      print('AUTH_LOG: Signup Response Status: ${response.statusCode}');
+      print('AUTH_LOG: Signup Response Body: ${response.body}');
 
-    throw Exception('SIGNUP_FAILED');
+      if (response.statusCode == 200) return;
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (data['error'] == 'EMAIL_EXISTS') throw Exception('EMAIL_EXISTS');
+      if (data['error'] == 'EMAIL_PENDING') throw Exception('EMAIL_PENDING');
+
+      throw Exception('SIGNUP_FAILED');
+    } catch (e) {
+      print('AUTH_LOG: Exception during signup: $e');
+      rethrow;
+    }
   }
 
   @override

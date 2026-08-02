@@ -35,6 +35,7 @@ class TransactionModel {
   final String? subCategory; // nested selection based on category
   final String? customCategory; // set when category == other
   final int? quantity; // Optional field for stock tracking
+  final bool edited; // True if the transaction has been modified
   final String? description;
   final String? addedBy;
 
@@ -48,6 +49,7 @@ class TransactionModel {
     this.subCategory,
     this.customCategory,
     this.quantity,
+    this.edited = false,
     this.description,
     this.addedBy,
   });

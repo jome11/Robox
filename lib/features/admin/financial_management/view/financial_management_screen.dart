@@ -166,24 +166,25 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
     }
   }
 
-  Future<void> _updateTransactionDescription(String id, String newDescription) async {
+  Future<void> _updateTransaction(String id, {String? title, double? amount, String? description}) async {
     try {
-      await _financeRepository.updateDescription(id, newDescription);
+      await _financeRepository.updateTransaction(id, title: title, amount: amount, description: description);
       setState(() {
         final index = _transactions.indexWhere((t) => t.id == id);
         if (index != -1) {
           final t = _transactions[index];
           _transactions[index] = TransactionModel(
             id: t.id,
-            title: t.title,
-            amount: t.amount,
+            title: title ?? t.title,
+            amount: amount ?? t.amount,
             type: t.type,
             date: t.date,
             category: t.category,
             subCategory: t.subCategory,
             customCategory: t.customCategory,
             quantity: t.quantity,
-            description: newDescription,
+            edited: true,
+            description: description ?? t.description,
             addedBy: t.addedBy,
           );
         }
@@ -191,7 +192,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to save description. Please try again.')),
+        const SnackBar(content: Text('Failed to save changes. Please try again.')),
       );
     }
   }
@@ -206,7 +207,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
       ),
       builder: (context) => _TransactionDetailModal(
         transaction: transaction,
-        onUpdateDescription: (desc) => _updateTransactionDescription(transaction.id, desc),
+        onUpdate: (title, amount, desc) => _updateTransaction(transaction.id, title: title, amount: amount, description: desc),
       ),
     );
   }
@@ -341,11 +342,11 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
 
 class _TransactionDetailModal extends StatefulWidget {
   final TransactionModel transaction;
-  final ValueChanged<String> onUpdateDescription;
+  final Function(String title, double amount, String description) onUpdate;
 
   const _TransactionDetailModal({
     required this.transaction,
-    required this.onUpdateDescription,
+    required this.onUpdate,
   });
 
   @override
@@ -353,18 +354,24 @@ class _TransactionDetailModal extends StatefulWidget {
 }
 
 class _TransactionDetailModalState extends State<_TransactionDetailModal> {
-  late TextEditingController _editController;
+  late TextEditingController _titleController;
+  late TextEditingController _amountController;
+  late TextEditingController _descriptionController;
   bool _isEditing = false;
 
   @override
   void initState() {
     super.initState();
-    _editController = TextEditingController(text: widget.transaction.description);
+    _titleController = TextEditingController(text: widget.transaction.title);
+    _amountController = TextEditingController(text: widget.transaction.amount.toStringAsFixed(2));
+    _descriptionController = TextEditingController(text: widget.transaction.description);
   }
 
   @override
   void dispose() {
-    _editController.dispose();
+    _titleController.dispose();
+    _amountController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -413,7 +420,23 @@ class _TransactionDetailModalState extends State<_TransactionDetailModal> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(widget.transaction.title, style: AppTextStyles.headline),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(widget.transaction.title, style: AppTextStyles.headline),
+                      ),
+                      if (widget.transaction.edited)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceHigh,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text('EDITED', style: AppTextStyles.label.copyWith(fontSize: 9)),
+                        ),
+                    ],
+                  ),
                 ),
                 Text(
                   '${isIncome ? '+' : '-'}ETB ${widget.transaction.amount.toStringAsFixed(2)}',
@@ -447,23 +470,51 @@ class _TransactionDetailModalState extends State<_TransactionDetailModal> {
             const SizedBox(height: 8),
             if (_isEditing)
               Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text('TITLE', style: AppTextStyles.label),
+                  const SizedBox(height: 4),
                   TextField(
-                    controller: _editController,
+                    controller: _titleController,
+                    style: AppTextStyles.body,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text('AMOUNT (ETB)', style: AppTextStyles.label),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: _amountController,
+                    style: AppTextStyles.body,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text('DESCRIPTION', style: AppTextStyles.label),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: _descriptionController,
                     style: AppTextStyles.body,
                     maxLines: 4,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: AppColors.surface,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                     ),
                   ),
                   const SizedBox(height: 16),
                   RoboxButton(
                     label: 'SAVE CHANGES',
                     onPressed: () {
-                      widget.onUpdateDescription(_editController.text);
+                      final amount = double.tryParse(_amountController.text) ?? widget.transaction.amount;
+                      widget.onUpdate(_titleController.text, amount, _descriptionController.text);
                       setState(() => _isEditing = false);
                     },
                   ),
@@ -562,7 +613,21 @@ class _TransactionTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(transaction.title, style: AppTextStyles.body),
+                Row(
+                  children: [
+                    Text(transaction.title, style: AppTextStyles.body),
+                    if (transaction.edited)
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceHigh,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text('EDITED', style: AppTextStyles.label.copyWith(fontSize: 9)),
+                      ),
+                  ],
+                ),
                 Wrap(
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [

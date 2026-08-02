@@ -17,7 +17,7 @@ abstract class FinanceRepository {
     int? quantity,
     String? description,
   });
-  Future<void> updateDescription(String transactionId, String description);
+  Future<void> updateTransaction(String transactionId, {String? title, double? amount, String? description});
 }
 
 class FinanceRepositoryImpl implements FinanceRepository {
@@ -47,6 +47,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
       subCategory: json['subCategory'] as String?,
       customCategory: json['customCategory'] as String?,
       quantity: json['quantity'] as int?,
+      edited: json['edited'] as bool? ?? false,
       description: json['description'] as String?,
       addedBy: json['addedBy'] as String?,
     );
@@ -108,13 +109,18 @@ class FinanceRepositoryImpl implements FinanceRepository {
   }
 
   @override
-  Future<void> updateDescription(String transactionId, String description) async {
+  Future<void> updateTransaction(String transactionId, {String? title, double? amount, String? description}) async {
     final headers = await _authHeaders();
+    final body = <String, dynamic>{};
+    if (title != null) body['title'] = title;
+    if (amount != null) body['amount'] = amount;
+    if (description != null) body['description'] = description;
+
     final response = await http.patch(
       Uri.parse('${ApiConstants.baseUrl}/transactions/$transactionId/description'),
       headers: headers,
-      body: jsonEncode({'description': description}),
+      body: jsonEncode(body),
     );
-    if (response.statusCode != 200) throw Exception('UPDATE_DESCRIPTION_FAILED');
+    if (response.statusCode != 200) throw Exception('UPDATE_TRANSACTION_FAILED');
   }
 }

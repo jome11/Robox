@@ -43,19 +43,6 @@ class _StockScreenState extends State<StockScreen> {
     }
   }
 
-  Color _getStatusColor(InventoryItem item) {
-    final isMachine = item.name.contains('ENDER') || item.name.contains('PLUS');
-    if (isMachine) {
-      if (item.quantity <= 1) return AppColors.error;
-      if (item.quantity < 5) return AppColors.warning;
-    } else {
-      // Filament
-      if (item.quantity <= 10) return AppColors.error;
-      if (item.quantity < 20) return AppColors.warning;
-    }
-    return AppColors.primary;
-  }
-
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(symbol: 'ETB ', decimalDigits: 0);
@@ -100,7 +87,6 @@ class _StockScreenState extends State<StockScreen> {
                 )
               else
                 ..._items.map((item) {
-                  final accentColor = _getStatusColor(item);
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
@@ -111,15 +97,6 @@ class _StockScreenState extends State<StockScreen> {
                     ),
                     child: Row(
                       children: [
-                        Container(
-                          width: 4,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: accentColor,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,7 +114,7 @@ class _StockScreenState extends State<StockScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text('${item.quantity}',
-                                style: AppTextStyles.headline.copyWith(fontSize: 24, color: accentColor)),
+                                style: AppTextStyles.headline.copyWith(fontSize: 24, color: AppColors.primary)),
                             Text('UNITS', style: AppTextStyles.label.copyWith(fontSize: 10)),
                           ],
                         ),

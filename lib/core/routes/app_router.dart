@@ -171,6 +171,14 @@ class AppRouter {
             StatefulShellBranch(
               routes: [
                 GoRoute(
+                  path: '/worker/stock',
+                  builder: (context, state) => const StockScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
                   path: '/worker/finance',
                   builder: (context, state) => const WorkerFinanceScreen(),
                 ),

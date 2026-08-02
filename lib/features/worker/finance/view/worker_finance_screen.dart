@@ -99,24 +99,25 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
     }
   }
 
-  Future<void> _updateTransactionDescription(String id, String newDescription) async {
+  Future<void> _updateTransaction(String id, {String? title, double? amount, String? description}) async {
     try {
-      await _financeRepository.updateDescription(id, newDescription);
+      await _financeRepository.updateTransaction(id, title: title, amount: amount, description: description);
       setState(() {
         final index = _transactions.indexWhere((t) => t.id == id);
         if (index != -1) {
           final t = _transactions[index];
           _transactions[index] = TransactionModel(
             id: t.id,
-            title: t.title,
-            amount: t.amount,
+            title: title ?? t.title,
+            amount: amount ?? t.amount,
             type: t.type,
             date: t.date,
             category: t.category,
             subCategory: t.subCategory,
             customCategory: t.customCategory,
             quantity: t.quantity,
-            description: newDescription,
+            edited: true,
+            description: description ?? t.description,
             addedBy: t.addedBy,
           );
         }
@@ -124,14 +125,16 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to save description. Please try again.')),
+        const SnackBar(content: Text('Failed to save changes. Please try again.')),
       );
     }
   }
 
   void _showTransactionDetails(TransactionModel transaction) {
     final isIncome = transaction.type == TransactionType.income;
-    final editController = TextEditingController(text: transaction.description);
+    final titleController = TextEditingController(text: transaction.title);
+    final amountController = TextEditingController(text: transaction.amount.toStringAsFixed(2));
+    final descriptionController = TextEditingController(text: transaction.description);
     bool isEditing = false;
 
     showModalBottomSheet(
@@ -184,7 +187,23 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Text(transaction.title, style: AppTextStyles.headline),
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(transaction.title, style: AppTextStyles.headline),
+                          ),
+                          if (transaction.edited)
+                            Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceHigh,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text('EDITED', style: AppTextStyles.label.copyWith(fontSize: 9)),
+                            ),
+                        ],
+                      ),
                     ),
                     Text(
                       '${isIncome ? '+' : '-'}ETB ${transaction.amount.toStringAsFixed(2)}',
@@ -217,9 +236,37 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
                 const SizedBox(height: 8),
                 if (isEditing)
                   Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text('TITLE', style: AppTextStyles.label),
+                      const SizedBox(height: 4),
                       TextField(
-                        controller: editController,
+                        controller: titleController,
+                        style: AppTextStyles.body,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: AppColors.surface,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text('AMOUNT (ETB)', style: AppTextStyles.label),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: amountController,
+                        style: AppTextStyles.body,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: AppColors.surface,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text('DESCRIPTION', style: AppTextStyles.label),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: descriptionController,
                         style: AppTextStyles.body,
                         maxLines: 4,
                         decoration: InputDecoration(
@@ -233,7 +280,8 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
                       RoboxButton(
                         label: 'SAVE CHANGES',
                         onPressed: () {
-                          _updateTransactionDescription(transaction.id, editController.text);
+                          final amount = double.tryParse(amountController.text) ?? transaction.amount;
+                          _updateTransaction(transaction.id, title: titleController.text, amount: amount, description: descriptionController.text);
                           setModalState(() => isEditing = false);
                         },
                       ),
@@ -427,7 +475,21 @@ class _TransactionTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(transaction.title, style: AppTextStyles.body),
+                Row(
+                  children: [
+                    Text(transaction.title, style: AppTextStyles.body),
+                    if (transaction.edited)
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceHigh,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text('EDITED', style: AppTextStyles.label.copyWith(fontSize: 9)),
+                      ),
+                  ],
+                ),
                 Wrap(
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
