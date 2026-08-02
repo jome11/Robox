@@ -19,6 +19,7 @@ import '../../features/shared/chat/view/chat_screen.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/auth/view/signup_screen.dart';
+import '../../features/auth/view/forgot_password_screen.dart';
 import '../../features/auth/view/pending_approval_screen.dart';
 import '../../features/admin/pending_requests/view/pending_requests_screen.dart';
 import '../../features/auth/bloc/signup_bloc.dart';
@@ -43,6 +44,10 @@ class AppRouter {
         GoRoute(
           path: '/pending-approval',
           builder: (context, state) => const PendingApprovalScreen(),
+        ),
+        GoRoute(
+          path: '/forgot-password',
+          builder: (context, state) => const ForgotPasswordScreen(),
         ),
         
         GoRoute(

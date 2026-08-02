@@ -62,7 +62,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              const SizedBox(height: 24),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => context.push('/forgot-password'),
+                  child: Text(
+                    'Forgot Password?',
+                    style: AppTextStyles.label.copyWith(color: AppColors.primary),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               BlocConsumer<AuthBloc, AuthState>(
                 listener: (context, state) {
                   if (state is AuthError) {
