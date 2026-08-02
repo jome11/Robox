@@ -20,15 +20,37 @@ import '../../features/shared/chat/view/chat_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/auth/view/signup_screen.dart';
 import '../../features/auth/view/forgot_password_screen.dart';
+import '../../features/auth/view/change_password_screen.dart';
 import '../../features/auth/view/pending_approval_screen.dart';
 import '../../features/admin/pending_requests/view/pending_requests_screen.dart';
+import '../../features/admin/workers/view/manage_workers_screen.dart';
 import '../../features/auth/bloc/signup_bloc.dart';
 import '../../data/repositories/auth_repository.dart';
 
 class AppRouter {
   static GoRouter router(UserModel? user) {
     return GoRouter(
-      initialLocation: user == null ? '/login' : (user.role == UserRole.admin ? '/admin' : '/worker'),
+      initialLocation: user == null
+          ? '/login'
+          : (user.mustChangePassword
+              ? '/change-password'
+              : (user.role == UserRole.admin ? '/admin' : '/worker')),
+      redirect: (context, state) {
+        final loggingIn = state.matchedLocation == '/login';
+        final signingUp = state.matchedLocation == '/signup';
+        final resetting = state.matchedLocation == '/forgot-password';
+        
+        if (user == null) {
+          if (loggingIn || signingUp || resetting) return null;
+          return '/login';
+        }
+
+        if (user.mustChangePassword && state.matchedLocation != '/change-password') {
+          return '/change-password';
+        }
+
+        return null;
+      },
       routes: [
         GoRoute(
           path: '/login',
@@ -48,6 +70,10 @@ class AppRouter {
         GoRoute(
           path: '/forgot-password',
           builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/change-password',
+          builder: (context, state) => const ChangePasswordScreen(),
         ),
         
         GoRoute(
@@ -72,6 +98,10 @@ class AppRouter {
                     GoRoute(
                       path: 'pending-requests',
                       builder: (context, state) => const PendingRequestsScreen(),
+                    ),
+                    GoRoute(
+                      path: 'workers',
+                      builder: (context, state) => const ManageWorkersScreen(),
                     ),
                   ],
                 ),

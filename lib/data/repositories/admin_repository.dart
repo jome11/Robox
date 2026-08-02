@@ -9,6 +9,8 @@ abstract class AdminRepository {
   Future<void> approveRequest(String id);
   Future<void> rejectRequest(String id);
   Future<List<Map<String, String>>> getWorkers();
+  Future<String> resetWorkerPassword(String workerId);
+  Future<void> deactivateWorker(String workerId);
 }
 
 class AdminRepositoryImpl implements AdminRepository {
@@ -86,8 +88,38 @@ class AdminRepositoryImpl implements AdminRepository {
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final workers = data['workers'] as List<dynamic>;
     return workers.map((w) => {
-      'id': (w as Map<String, dynamic>)['id'] as String,
-      'name': w['name'] as String,
+      'id': (w as Map<String, dynamic>)['id'].toString(),
+      'name': w['name']?.toString() ?? 'Unknown',
+      'email': w['email']?.toString() ?? '',
     }).toList();
+  }
+
+  @override
+  Future<String> resetWorkerPassword(String workerId) async {
+    final headers = await _authHeaders();
+    final response = await http.post(
+      Uri.parse('${ApiConstants.baseUrl}/admin/workers/$workerId/reset-password'),
+      headers: headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('PASSWORD_RESET_FAILED');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return data['newPassword'] as String;
+  }
+
+  @override
+  Future<void> deactivateWorker(String workerId) async {
+    final headers = await _authHeaders();
+    final response = await http.post(
+      Uri.parse('${ApiConstants.baseUrl}/admin/workers/$workerId/deactivate'),
+      headers: headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('DEACTIVATE_FAILED');
+    }
   }
 }

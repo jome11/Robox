@@ -90,7 +90,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Dashboard', style: AppTextStyles.headline),
+                      Row(
+                        children: [
+                          Text('Dashboard', style: AppTextStyles.headline),
+                          const SizedBox(width: 12),
+                          IconButton(
+                            onPressed: () => context.push('/admin/workers'),
+                            icon: const Icon(Icons.people_outline, color: AppColors.primary),
+                            tooltip: 'Manage Workers',
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 4),
                       Text('Team and business overview',
                           style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),

@@ -8,6 +8,7 @@ abstract class AuthRepository {
   Future<UserModel?> login(String email, String password);
   Future<void> signup(String name, String email, String password);
   Future<void> forgotPassword(String email);
+  Future<void> setNewPassword(String newPassword);
 }
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -64,6 +65,7 @@ class AuthRepositoryImpl implements AuthRepository {
           name: user['name']?.toString() ?? 'Unknown',
           email: user['email']?.toString() ?? '',
           role: user['role'] == 'admin' ? UserRole.admin : UserRole.worker,
+          mustChangePassword: user['mustChangePassword'] == true || user['mustChangePassword'] == 1,
         );
       }
 
@@ -93,5 +95,22 @@ class AuthRepositoryImpl implements AuthRepository {
     if (data['error'] == 'EMAIL_PENDING') throw Exception('EMAIL_PENDING');
 
     throw Exception('SIGNUP_FAILED');
+  }
+
+  @override
+  Future<void> setNewPassword(String newPassword) async {
+    final token = await _storage.read(key: 'jwt_token');
+    final response = await http.patch(
+      Uri.parse('${ApiConstants.baseUrl}/auth/password'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'newPassword': newPassword}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('PASSWORD_CHANGE_FAILED');
+    }
   }
 }
