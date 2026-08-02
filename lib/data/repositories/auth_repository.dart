@@ -24,7 +24,7 @@ class AuthRepositoryImpl implements AuthRepository {
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 45));
 
       print('AUTH_LOG: Response Status: ${response.statusCode}');
       print('AUTH_LOG: Response Body: ${response.body}');
@@ -65,7 +65,7 @@ class AuthRepositoryImpl implements AuthRepository {
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'name': name, 'email': email, 'password': password}),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 45));
 
       print('AUTH_LOG: Signup Response Status: ${response.statusCode}');
       print('AUTH_LOG: Signup Response Body: ${response.body}');
