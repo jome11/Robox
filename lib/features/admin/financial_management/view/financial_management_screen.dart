@@ -8,6 +8,7 @@ import '../../../../core/widgets/income_category_dropdown.dart';
 import '../../../../data/models/transaction_model.dart';
 import '../../../../data/repositories/finance_repository.dart';
 import '../../../../data/repositories/stock_repository.dart';
+import '../../../../core/utils/stock_refresh_notifier.dart';
 
 class FinancialManagementScreen extends StatefulWidget {
   const FinancialManagementScreen({super.key});
@@ -138,7 +139,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
 
             if (name != null && qty != null && price != null) {
               items.add({
-                'name': name,
+                'itemName': name,
                 'quantity': qty,
                 'price': price,
               });
@@ -148,6 +149,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
 
         if (items.isNotEmpty) {
           await _stockRepository.restock(items);
+          StockRefreshNotifier.instance.notifyRestocked();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Inventory restocked successfully')),

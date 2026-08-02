@@ -4,6 +4,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../data/models/inventory_item.dart';
 import '../../../../data/repositories/stock_repository.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/utils/stock_refresh_notifier.dart';
 
 class StockScreen extends StatefulWidget {
   const StockScreen({super.key});
@@ -22,6 +23,13 @@ class _StockScreenState extends State<StockScreen> {
   void initState() {
     super.initState();
     _loadStock();
+    StockRefreshNotifier.instance.addListener(_loadStock);
+  }
+
+  @override
+  void dispose() {
+    StockRefreshNotifier.instance.removeListener(_loadStock);
+    super.dispose();
   }
 
   Future<void> _loadStock() async {
