@@ -22,6 +22,7 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
   String? _subCategory;
   final _customCategoryController = TextEditingController();
   final _amountController = TextEditingController();
+  final _quantityController = TextEditingController();
   final _descriptionController = TextEditingController();
 
   List<TransactionModel> _transactions = [];
@@ -58,6 +59,7 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
   void dispose() {
     _customCategoryController.dispose();
     _amountController.dispose();
+    _quantityController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -66,6 +68,8 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
     final amount = double.tryParse(_amountController.text);
     if (amount == null || amount <= 0) return;
     if (_type == TransactionType.income && _category == null) return;
+
+    final quantity = int.tryParse(_quantityController.text);
 
     setState(() => _isSubmitting = true);
 
@@ -77,10 +81,12 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
         category: _type == TransactionType.income ? _category : null,
         subCategory: _subCategory,
         customCategory: _category == IncomeCategory.other ? _customCategoryController.text : null,
+        quantity: quantity,
         description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
       );
 
       _amountController.clear();
+      _quantityController.clear();
       _descriptionController.clear();
       _customCategoryController.clear();
       setState(() {
@@ -343,6 +349,16 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
                   onSubChanged: (s) => setState(() => _subCategory = s),
                 ),
                 const SizedBox(height: 16),
+                if (_category == IncomeCategory.threeDMachineSale || _category == IncomeCategory.filament) ...[
+                  Text('QUANTITY SOLD', style: AppTextStyles.label),
+                  const SizedBox(height: 8),
+                  _StyledField(
+                    controller: _quantityController,
+                    hint: '0',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ],
 
               Text('AMOUNT (ETB)', style: AppTextStyles.label),
