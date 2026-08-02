@@ -7,36 +7,11 @@ import '../models/user_model.dart';
 abstract class AuthRepository {
   Future<UserModel?> login(String email, String password);
   Future<void> signup(String name, String email, String password);
-  Future<void> forgotPassword(String email);
   Future<void> setNewPassword(String newPassword);
 }
 
 class AuthRepositoryImpl implements AuthRepository {
   final _storage = const FlutterSecureStorage();
-
-  @override
-  Future<void> forgotPassword(String email) async {
-    final url = Uri.parse('${ApiConstants.baseUrl}/forgot-password');
-    print('AUTH_LOG: Requesting password reset for: $email');
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email}),
-      ).timeout(const Duration(seconds: 10));
-
-      print('AUTH_LOG: Response Status: ${response.statusCode}');
-      if (response.statusCode != 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        if (data['error'] == 'USER_NOT_FOUND') throw Exception('USER_NOT_FOUND');
-        throw Exception('FORGOT_PASSWORD_FAILED');
-      }
-    } catch (e) {
-      print('AUTH_LOG: Exception during forgotPassword: $e');
-      rethrow;
-    }
-  }
 
   @override
   Future<UserModel?> login(String email, String password) async {
@@ -101,7 +76,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> setNewPassword(String newPassword) async {
     final token = await _storage.read(key: 'jwt_token');
     final response = await http.patch(
-      Uri.parse('${ApiConstants.baseUrl}/auth/password'),
+      Uri.parse('${ApiConstants.baseUrl}/account/password'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

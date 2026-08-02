@@ -98,7 +98,7 @@ class AdminRepositoryImpl implements AdminRepository {
   Future<String> resetWorkerPassword(String workerId) async {
     final headers = await _authHeaders();
     final response = await http.post(
-      Uri.parse('${ApiConstants.baseUrl}/admin/workers/$workerId/reset-password'),
+      Uri.parse('${ApiConstants.baseUrl}/admin/users/$workerId/reset-password'),
       headers: headers,
     );
 
@@ -114,7 +114,7 @@ class AdminRepositoryImpl implements AdminRepository {
   Future<void> deactivateWorker(String workerId) async {
     final headers = await _authHeaders();
     final response = await http.post(
-      Uri.parse('${ApiConstants.baseUrl}/admin/workers/$workerId/deactivate'),
+      Uri.parse('${ApiConstants.baseUrl}/admin/users/$workerId/deactivate'),
       headers: headers,
     );
 

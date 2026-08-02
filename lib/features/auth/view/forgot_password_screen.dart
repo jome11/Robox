@@ -13,49 +13,6 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  final _emailController = TextEditingController();
-  final _authRepository = AuthRepositoryImpl();
-  bool _isLoading = false;
-  String? _successMessage;
-  String? _errorMessage;
-
-  Future<void> _submitRequest() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      setState(() => _errorMessage = 'Please enter your email address');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _successMessage = null;
-    });
-
-    try {
-      await _authRepository.forgotPassword(email);
-      setState(() {
-        _successMessage = 'A temporary password has been sent to your email.';
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        if (e.toString().contains('USER_NOT_FOUND')) {
-          _errorMessage = 'No account found with this email.';
-        } else {
-          _errorMessage = 'Failed to request reset. Please check your connection.';
-        }
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,44 +38,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Reset Password',
+                'Forgot your password?',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.headline,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               Text(
-                'Enter your registered email and we\'ll send you a temporary password.',
+                'Password resets are handled by your admin. Please contact them directly and they\'ll issue you a new temporary password.',
                 textAlign: TextAlign.center,
-                style: AppTextStyles.body.copyWith(color: AppColors.textMuted),
+                style: AppTextStyles.body,
               ),
               const SizedBox(height: 40),
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email Address',
-                  border: const OutlineInputBorder(),
-                  errorText: _errorMessage,
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 24),
-              if (_successMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: Text(
-                    _successMessage!,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.body.copyWith(color: Colors.green),
-                  ),
-                ),
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator())
-              else
-                RoboxButton(
-                  label: 'SEND PASSWORD',
-                  onPressed: _submitRequest,
-                ),
-              const SizedBox(height: 24),
               TextButton(
                 onPressed: () => context.go('/login'),
                 child: Text(
