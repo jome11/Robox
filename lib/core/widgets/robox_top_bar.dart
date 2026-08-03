@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../../data/models/user_model.dart';
@@ -25,6 +26,17 @@ class RoboxTopBar extends StatelessWidget implements PreferredSizeWidget {
       shape: const Border(bottom: BorderSide(color: AppColors.border)),
       title: Text('Robox', style: AppTextStyles.logo),
       actions: [
+        IconButton(
+          onPressed: () {
+            final authState = context.read<AuthBloc>().state;
+            if (authState is AuthAuthenticated) {
+              context.push('/account/settings', extra: authState.user);
+            }
+          },
+          icon: const Icon(Icons.settings_outlined, color: AppColors.textMuted, size: 20),
+          tooltip: 'Account Settings',
+        ),
+        const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -36,7 +48,7 @@ class RoboxTopBar extends StatelessWidget implements PreferredSizeWidget {
             style: AppTextStyles.label.copyWith(color: AppColors.secondary),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Center(
           child: Padding(
             padding: const EdgeInsets.only(right: 16),

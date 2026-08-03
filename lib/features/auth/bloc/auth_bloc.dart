@@ -34,5 +34,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LogoutRequested>((event, emit) {
       emit(AuthInitial());
     });
+
+    on<UserUpdated>((event, emit) {
+      emit(AuthAuthenticated(event.user));
+    });
   }
 }

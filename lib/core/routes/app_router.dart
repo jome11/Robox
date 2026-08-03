@@ -21,6 +21,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/auth/view/signup_screen.dart';
 import '../../features/auth/view/forgot_password_screen.dart';
 import '../../features/auth/view/change_password_screen.dart';
+import '../../features/auth/view/account_settings_screen.dart';
 import '../../features/auth/view/pending_approval_screen.dart';
 import '../../features/admin/pending_requests/view/pending_requests_screen.dart';
 import '../../features/admin/workers/view/manage_workers_screen.dart';
@@ -74,6 +75,13 @@ class AppRouter {
         GoRoute(
           path: '/change-password',
           builder: (context, state) => const ChangePasswordScreen(),
+        ),
+        GoRoute(
+          path: '/account/settings',
+          builder: (context, state) {
+            final user = state.extra as UserModel;
+            return AccountSettingsScreen(user: user);
+          },
         ),
         
         GoRoute(

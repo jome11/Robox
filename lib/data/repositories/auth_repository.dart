@@ -8,6 +8,7 @@ abstract class AuthRepository {
   Future<UserModel?> login(String email, String password);
   Future<void> signup(String name, String email, String password);
   Future<void> setNewPassword(String newPassword);
+  Future<void> updateProfile({String? name, String? email});
 }
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -93,10 +94,32 @@ class AuthRepositoryImpl implements AuthRepository {
         'Authorization': 'Bearer $token',
       },
       body: jsonEncode({'newPassword': newPassword}),
-    );
+    ).timeout(const Duration(seconds: 45));
 
     if (response.statusCode != 200) {
       throw Exception('PASSWORD_CHANGE_FAILED');
     }
+  }
+
+  @override
+  Future<void> updateProfile({String? name, String? email}) async {
+    final token = await _storage.read(key: 'jwt_token');
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (email != null) body['email'] = email;
+
+    final response = await http.patch(
+      Uri.parse('${ApiConstants.baseUrl}/account/profile'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(body),
+    ).timeout(const Duration(seconds: 45));
+
+    if (response.statusCode == 200) return;
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['error'] == 'EMAIL_EXISTS') throw Exception('EMAIL_EXISTS');
+    throw Exception('PROFILE_UPDATE_FAILED');
   }
 }
