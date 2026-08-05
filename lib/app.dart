@@ -33,6 +33,13 @@ class RoboxApp extends StatelessWidget {
         ],
         child: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
+            if (state is AuthInitial) {
+              // Still checking for a stored session — show a splash instead of flashing login.
+              return const MaterialApp(
+                home: Scaffold(body: Center(child: CircularProgressIndicator())),
+                debugShowCheckedModeBanner: false,
+              );
+            }
             final user = state is AuthAuthenticated ? state.user : null;
             return MaterialApp.router(
               title: 'ROBOX',

@@ -10,6 +10,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
 
   AuthBloc(this._authRepository) : super(AuthInitial()) {
+    on<AppStarted>((event, emit) async {
+      final user = await _authRepository.getCurrentUser();
+      emit(user != null ? AuthAuthenticated(user) : AuthUnauthenticated());
+    });
+
     on<LoginRequested>((event, emit) async {
       emit(AuthLoading());
       try {
@@ -31,12 +36,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
-    on<LogoutRequested>((event, emit) {
-      emit(AuthInitial());
+    on<LogoutRequested>((event, emit) async {
+      await _authRepository.logout();
+      emit(AuthUnauthenticated());
     });
 
     on<UserUpdated>((event, emit) {
       emit(AuthAuthenticated(event.user));
     });
+
+    add(AppStarted());
   }
 }

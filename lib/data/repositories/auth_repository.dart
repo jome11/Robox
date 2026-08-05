@@ -9,6 +9,8 @@ abstract class AuthRepository {
   Future<void> signup(String name, String email, String password);
   Future<void> setNewPassword(String newPassword);
   Future<void> updateProfile({String? name, String? email});
+  Future<UserModel?> getCurrentUser();
+  Future<void> logout();
 }
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -121,5 +123,39 @@ class AuthRepositoryImpl implements AuthRepository {
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (data['error'] == 'EMAIL_EXISTS') throw Exception('EMAIL_EXISTS');
     throw Exception('PROFILE_UPDATE_FAILED');
+  }
+
+  @override
+  Future<UserModel?> getCurrentUser() async {
+    final token = await _storage.read(key: 'jwt_token');
+    if (token == null) return null;
+
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/account/profile'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 45));
+
+      if (response.statusCode != 200) {
+        await _storage.delete(key: 'jwt_token');
+        return null;
+      }
+
+      final user = jsonDecode(response.body) as Map<String, dynamic>;
+      return UserModel(
+        id: user['id'].toString(),
+        name: user['name']?.toString() ?? 'Unknown',
+        email: user['email']?.toString() ?? '',
+        role: user['role'] == 'admin' ? UserRole.admin : UserRole.worker,
+        mustChangePassword: user['mustChangePassword'] == true,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> logout() async {
+    await _storage.delete(key: 'jwt_token');
   }
 }
