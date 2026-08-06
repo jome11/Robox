@@ -1,4 +1,6 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, TargetPlatform, defaultTargetPlatform;
+// CHANGED: removed `import 'dart:io';` — Platform.isAndroid from dart:io crashes on Flutter Web.
+// Replaced with kIsWeb/defaultTargetPlatform from Flutter itself, which work everywhere including web.
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -28,7 +30,7 @@ class NotificationService {
 
     // 2. Initialize Local Notifications (for Foreground messages)
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
+    AndroidInitializationSettings('@mipmap/launcher_icon');
 
     const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings();
 
@@ -46,7 +48,10 @@ class NotificationService {
     );
 
     // 3. Create Android Channel (Required for high importance)
-    if (Platform.isAndroid) {
+    // CHANGED: was `if (Platform.isAndroid)` — that line alone was throwing on web
+    // (Platform class doesn't exist in a browser), which silently killed the whole
+    // initialize() call since main.dart wraps this in a try/catch.
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       const AndroidNotificationChannel channel = AndroidNotificationChannel(
         'robox_finance_channel',
         'Financial Alerts',
@@ -75,7 +80,12 @@ class NotificationService {
 
   Future<String?> getToken() async {
     try {
-      String? token = await _fcm.getToken();
+      // CHANGED: was `String? token = await _fcm.getToken();` — web requires an
+      // explicit VAPID key to be passed in, or getToken() fails on web specifically.
+      // PASTE YOUR ACTUAL KEY BELOW, replacing the placeholder text:
+      String? token = kIsWeb
+          ? await _fcm.getToken(vapidKey: 'BGUhAysyuFVzC6s5rAeeLVJN2OefZ-h4It-gOjhhh49h8ym-l1l1SkBjSXAqc2dOcbN6rC2I1cWPj1KRfmFs8J8') // <-- put your real key here
+          : await _fcm.getToken();
       print('NOTIFICATION_LOG: Device Token: $token');
       return token;
     } catch (e) {
@@ -86,7 +96,8 @@ class NotificationService {
 
   void _showLocalNotification(RemoteMessage message) {
     RemoteNotification? notification = message.notification;
-    AndroidNotification? android = message.notification?.android;
+    // Note: the unused `android` variable from your original was removed here —
+    // it was declared but never actually used anywhere below, harmless either way.
 
     if (notification != null) {
       _localNotifications.show(
