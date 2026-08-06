@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "64636347575",
+    "project_id": "robox-500fa",
+    "storage_bucket": "robox-500fa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:64636347575:android:479f312877ce04a3855932",
+        "android_client_info": {
+          "package_name": "com.example.robox"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8zLlfyiyhc_SixygasBkKlrju2bPHw8Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

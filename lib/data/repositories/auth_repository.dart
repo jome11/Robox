@@ -11,6 +11,7 @@ abstract class AuthRepository {
   Future<void> updateProfile({String? name, String? email});
   Future<UserModel?> getCurrentUser();
   Future<void> logout();
+  Future<void> updateDeviceToken(String token);
 }
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -123,6 +124,27 @@ class AuthRepositoryImpl implements AuthRepository {
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (data['error'] == 'EMAIL_EXISTS') throw Exception('EMAIL_EXISTS');
     throw Exception('PROFILE_UPDATE_FAILED');
+  }
+
+  @override
+  Future<void> updateDeviceToken(String token) async {
+    final jwt = await _storage.read(key: 'jwt_token');
+    if (jwt == null) return;
+
+    final response = await http.post(
+      Uri.parse('${ApiConstants.baseUrl}/account/device-token'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $jwt',
+      },
+      body: jsonEncode({'token': token}),
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      print('NOTIFICATION_LOG: Failed to sync token with backend: ${response.body}');
+    } else {
+      print('NOTIFICATION_LOG: Token synced successfully');
+    }
   }
 
   @override

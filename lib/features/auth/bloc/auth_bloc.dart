@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/repositories/auth_repository.dart';
 
@@ -12,7 +13,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc(this._authRepository) : super(AuthInitial()) {
     on<AppStarted>((event, emit) async {
       final user = await _authRepository.getCurrentUser();
-      emit(user != null ? AuthAuthenticated(user) : AuthUnauthenticated());
+      if (user != null) {
+        emit(AuthAuthenticated(user));
+        _syncDeviceToken();
+      } else {
+        emit(AuthUnauthenticated());
+      }
     });
 
     on<LoginRequested>((event, emit) async {
@@ -21,6 +27,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final user = await _authRepository.login(event.email, event.password);
         if (user != null) {
           emit(AuthAuthenticated(user));
+          _syncDeviceToken();
         } else {
           emit(const AuthError('Invalid credentials. Please check your email and password.'));
         }
@@ -46,5 +53,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
 
     add(AppStarted());
+  }
+
+  void _syncDeviceToken() async {
+    final token = await NotificationService.instance.getToken();
+    if (token != null) {
+      await _authRepository.updateDeviceToken(token);
+    }
   }
 }
