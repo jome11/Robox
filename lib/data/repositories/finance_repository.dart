@@ -11,8 +11,9 @@ abstract class FinanceRepository {
     required String title,
     required double amount,
     required TransactionType type,
-    IncomeCategory? category,
-    String? subCategory,
+    required PaymentMethod paymentMethod,
+    List<IncomeCategory> categories,
+    List<String> subCategories,
     String? customCategory,
     int? quantity,
     String? description,
@@ -31,6 +32,32 @@ class FinanceRepositoryImpl implements FinanceRepository {
     };
   }
 
+  /// The backend stores multiple categories as a comma-separated string in
+  /// a single "category" column, e.g. "threeDPrint,filament".
+  List<IncomeCategory> _parseCategories(dynamic raw) {
+    if (raw == null) return const [];
+    final str = raw as String;
+    if (str.isEmpty) return const [];
+    return str
+        .split(',')
+        .map((name) => name.trim())
+        .where((name) => name.isNotEmpty)
+        .map((name) => IncomeCategory.values.firstWhere(
+          (c) => c.name == name,
+      orElse: () => IncomeCategory.other,
+    ))
+        .toList();
+  }
+
+  /// The backend stores multiple specific types as a comma-separated string
+  /// in a single "sub_category" column, e.g. "PLA FILAMENT,ABS FILAMENT".
+  List<String> _parseSubCategories(dynamic raw) {
+    if (raw == null) return const [];
+    final str = raw as String;
+    if (str.isEmpty) return const [];
+    return str.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  }
+
   TransactionModel _fromJson(Map<String, dynamic> json) {
     return TransactionModel(
       id: json['id'] as String,
@@ -38,14 +65,10 @@ class FinanceRepositoryImpl implements FinanceRepository {
       amount: (json['amount'] as num).toDouble(),
       type: json['type'] == 'income' ? TransactionType.income : TransactionType.expense,
       date: DateTime.parse(json['date'] as String),
-      category: json['category'] == null
-          ? null
-          : IncomeCategory.values.firstWhere(
-              (c) => c.name == json['category'],
-              orElse: () => IncomeCategory.other,
-            ),
-      subCategory: json['subCategory'] as String?,
+      categories: _parseCategories(json['category']),
+      subCategories: _parseSubCategories(json['subCategory']),
       customCategory: json['customCategory'] as String?,
+      paymentMethod: PaymentMethod.fromLabel(json['paymentMethod'] as String?),
       quantity: json['quantity'] as int?,
       edited: json['edited'] as bool? ?? false,
       description: json['description'] as String?,
@@ -84,8 +107,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
     required String title,
     required double amount,
     required TransactionType type,
-    IncomeCategory? category,
-    String? subCategory,
+    required PaymentMethod paymentMethod,
+    List<IncomeCategory> categories = const [],
+    List<String> subCategories = const [],
     String? customCategory,
     int? quantity,
     String? description,
@@ -98,9 +122,10 @@ class FinanceRepositoryImpl implements FinanceRepository {
         'title': title,
         'amount': amount,
         'type': type == TransactionType.income ? 'income' : 'expense',
-        'category': category?.name,
-        'subCategory': subCategory,
+        'category': categories.isEmpty ? null : categories.map((c) => c.name).join(','),
+        'subCategory': subCategories.isEmpty ? null : subCategories.join(','),
         'customCategory': customCategory,
+        'paymentMethod': paymentMethod.label,
         'quantity': quantity,
         'description': description,
       }),

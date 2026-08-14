@@ -12,18 +12,20 @@ class FinancialComparisonChart extends StatelessWidget {
   Widget build(BuildContext context) {
     if (data.isEmpty) return const SizedBox.shrink();
 
-    // Scale values to millions for better display
-    final List<FlSpot> incomeSpots = [];
-    final List<FlSpot> expenseSpots = [];
-
-    for (int i = 0; i < data.length; i++) {
-      incomeSpots.add(FlSpot(i.toDouble(), data[i].income / 1000000));
-      expenseSpots.add(FlSpot(i.toDouble(), data[i].expense / 1000000));
+    // Scale to millions for readable bar heights, same as before.
+    double maxVal = 0;
+    for (final record in data) {
+      if (record.income / 1000000 > maxVal) maxVal = record.income / 1000000;
+      if (record.expense / 1000000 > maxVal) maxVal = record.expense / 1000000;
     }
+    final chartMax = maxVal == 0 ? 1.0 : maxVal * 1.2;
 
-    return LineChart(
-      LineChartData(
+    return BarChart(
+      BarChartData(
+        maxY: chartMax,
         gridData: const FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+        barTouchData: BarTouchData(enabled: true),
         titlesData: FlTitlesData(
           leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -32,44 +34,38 @@ class FinancialComparisonChart extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
                 final index = value.toInt();
-                if (index < 0 || index >= months.length) return const Text('');
+                if (index < 0 || index >= data.length) return const Text('');
                 return Padding(
                   padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(months[index], style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                  child: Text(data[index].label,
+                      style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
                 );
               },
             ),
           ),
         ),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [
-          // Income Line (Blue)
-          LineChartBarData(
-            spots: incomeSpots,
-            isCurved: true,
-            color: AppColors.primary,
-            barWidth: 3,
-            dotData: const FlDotData(show: true),
-            belowBarData: BarAreaData(
-              show: true,
-              color: AppColors.primary.withAlpha(20),
-            ),
-          ),
-          // Expense Line (Red)
-          LineChartBarData(
-            spots: expenseSpots,
-            isCurved: true,
-            color: AppColors.error,
-            barWidth: 3,
-            dotData: const FlDotData(show: true),
-            belowBarData: BarAreaData(
-              show: true,
-              color: AppColors.error.withAlpha(20),
-            ),
-          ),
-        ],
+        barGroups: List.generate(data.length, (i) {
+          final record = data[i];
+          return BarChartGroupData(
+            x: i,
+            barsSpace: 4,
+            barRods: [
+              BarChartRodData(
+                toY: record.income / 1000000,
+                color: AppColors.primary,
+                width: 8,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+              ),
+              BarChartRodData(
+                toY: record.expense / 1000000,
+                color: AppColors.error,
+                width: 8,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }

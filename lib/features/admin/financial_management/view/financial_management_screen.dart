@@ -1,10 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart' as excel_pkg;
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../core/widgets/robox_button.dart';
-import '../../../../core/widgets/income_category_dropdown.dart';
+import '../../../../core/widgets/category_checklist.dart';
+import '../../../../core/widgets/payment_method_picker.dart';
 import '../../../../data/models/transaction_model.dart';
 import '../../../../data/repositories/finance_repository.dart';
 import '../../../../data/repositories/stock_repository.dart';
@@ -22,8 +29,9 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
   final StockRepository _stockRepository = StockRepositoryImpl();
 
   TransactionType _type = TransactionType.income;
-  IncomeCategory? _category;
-  String? _subCategory;
+  Set<IncomeCategory> _categories = {};
+  PaymentMethod? _paymentMethod;
+  Set<String> _subCategories = {};
   final _customCategoryController = TextEditingController();
   final _amountController = TextEditingController();
   final _quantityController = TextEditingController();
@@ -32,6 +40,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
   List<TransactionModel> _transactions = [];
   bool _isLoading = true;
   bool _isSubmitting = false;
+  bool _isExporting = false;
   String? _error;
 
   @override
@@ -70,21 +79,41 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
 
   Future<void> _logEntry() async {
     final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount <= 0) return;
-    if (_type == TransactionType.income && _category == null) return;
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid amount.')),
+      );
+      return;
+    }
+    if (_type == TransactionType.income && _categories.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one category.')),
+      );
+      return;
+    }
+    if (_paymentMethod == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a payment method.')),
+      );
+      return;
+    }
 
     final quantity = int.tryParse(_quantityController.text);
+    final categoryList = _categories.toList();
 
     setState(() => _isSubmitting = true);
 
     try {
       await _financeRepository.createTransaction(
-        title: _type == TransactionType.income ? (_category?.label ?? 'Income') : 'Expense',
+        title: _type == TransactionType.income
+            ? (categoryList.isNotEmpty ? categoryList.map((c) => c.label).join(', ') : 'Income')
+            : 'Expense',
         amount: amount,
         type: _type,
-        category: _type == TransactionType.income ? _category : null,
-        subCategory: _subCategory,
-        customCategory: _category == IncomeCategory.other ? _customCategoryController.text : null,
+        paymentMethod: _paymentMethod!,
+        categories: _type == TransactionType.income ? categoryList : const [],
+        subCategories: _subCategories.toList(),
+        customCategory: _categories.contains(IncomeCategory.other) ? _customCategoryController.text : null,
         quantity: quantity,
         description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
       );
@@ -94,8 +123,9 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
       _descriptionController.clear();
       _customCategoryController.clear();
       setState(() {
-        _category = null;
-        _subCategory = null;
+        _categories = {};
+        _subCategories = {};
+        _paymentMethod = null;
       });
 
       await _loadTransactions();
@@ -132,7 +162,7 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
           for (int i = 1; i < sheet.maxRows; i++) {
             final row = sheet.rows[i];
             if (row.length < 4) continue;
-            
+
             final name = row[1]?.value?.toString();
             final qty = int.tryParse(row[2]?.value?.toString() ?? '');
             final price = double.tryParse(row[3]?.value?.toString() ?? '');
@@ -181,9 +211,10 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
             amount: amount ?? t.amount,
             type: t.type,
             date: t.date,
-            category: t.category,
-            subCategory: t.subCategory,
+            categories: t.categories,
+            subCategories: t.subCategories,
             customCategory: t.customCategory,
+            paymentMethod: t.paymentMethod,
             quantity: t.quantity,
             edited: true,
             description: description ?? t.description,
@@ -196,6 +227,39 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to save changes. Please try again.')),
       );
+    }
+  }
+
+  Future<void> _exportTransactions(BuildContext context) async {
+    setState(() => _isExporting = true);
+    try {
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: 'jwt_token');
+
+      final uri = Uri.parse('${ApiConstants.baseUrl}/admin/transactions/export');
+      final response = await http.get(
+        uri,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Export failed (${response.statusCode})');
+      }
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/robox_transactions.xlsx');
+      await file.writeAsBytes(response.bodyBytes);
+      // Fixed: Using the standard Share.shareXFiles.
+      // If the IDE continues to warn, it may be due to a specific lint rule.
+      await Share.shareXFiles([XFile(file.path)], text: 'Robox Financial Transactions Export');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
     }
   }
 
@@ -225,10 +289,37 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Finance', style: AppTextStyles.headline),
-              const SizedBox(height: 4),
-              Text('Industrial resource allocation and transaction monitoring.',
-                  style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Finance', style: AppTextStyles.headline),
+                        const SizedBox(height: 4),
+                        Text('Industrial resource allocation and transaction monitoring.',
+                            style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
+                      ],
+                    ),
+                  ),
+                  if (_isExporting)
+                    const Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  else
+                    IconButton(
+                      icon: const Icon(Icons.file_download_outlined, color: AppColors.primary),
+                      tooltip: 'Export to Excel',
+                      onPressed: () => _exportTransactions(context),
+                    ),
+                ],
+              ),
               const SizedBox(height: 20),
               Row(
                 children: [
@@ -249,18 +340,18 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
               ),
               const SizedBox(height: 16),
               if (_type == TransactionType.income) ...[
-                IncomeCategoryDropdown(
-                  selected: _category,
-                  selectedSub: _subCategory,
+                CategoryChecklist(
+                  selected: _categories,
+                  selectedSubs: _subCategories,
                   customController: _customCategoryController,
                   onChanged: (c) => setState(() {
-                    _category = c;
-                    _subCategory = null;
+                    _categories = c;
                   }),
-                  onSubChanged: (s) => setState(() => _subCategory = s),
+                  onSubsChanged: (s) => setState(() => _subCategories = s),
                 ),
                 const SizedBox(height: 16),
-                if (_category == IncomeCategory.threeDMachineSale || _category == IncomeCategory.filament) ...[
+                if (_categories.contains(IncomeCategory.threeDMachineSale) ||
+                    _categories.contains(IncomeCategory.filament)) ...[
                   Text('QUANTITY SOLD', style: AppTextStyles.label),
                   const SizedBox(height: 8),
                   _StyledField(
@@ -271,6 +362,11 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
                   const SizedBox(height: 16),
                 ],
               ],
+              PaymentMethodPicker(
+                selected: _paymentMethod,
+                onChanged: (m) => setState(() => _paymentMethod = m),
+              ),
+              const SizedBox(height: 16),
               Text('AMOUNT (ETB)', style: AppTextStyles.label),
               const SizedBox(height: 8),
               _StyledField(
@@ -330,15 +426,42 @@ class _FinancialManagementScreenState extends State<FinancialManagementScreen> {
                         style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
                   )
                 else
-                  ..._transactions.map((t) => GestureDetector(
-                    onTap: () => _showTransactionDetails(t),
-                    child: _TransactionTile(transaction: t),
-                  )),
+                  ..._groupByDate(_transactions).entries.expand(
+                        (entry) => [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16, bottom: 8),
+                        child: Text(
+                          entry.key,
+                          style: AppTextStyles.label.copyWith(color: AppColors.primary),
+                        ),
+                      ),
+                      ...entry.value.map((t) => GestureDetector(
+                        onTap: () => _showTransactionDetails(t),
+                        child: _TransactionTile(transaction: t),
+                      )),
+                    ],
+                  ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Groups transactions by the calendar date they were logged on, keeping
+  /// the newest-first order the backend already returns them in. Each date
+  /// becomes a section title in the list.
+  Map<String, List<TransactionModel>> _groupByDate(List<TransactionModel> transactions) {
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ];
+    final Map<String, List<TransactionModel>> grouped = {};
+    for (final t in transactions) {
+      final key = '${monthNames[t.date.month - 1]} ${t.date.day}, ${t.date.year}';
+      grouped.putIfAbsent(key, () => []).add(t);
+    }
+    return grouped;
   }
 }
 
@@ -524,8 +647,9 @@ class _TransactionDetailModalState extends State<_TransactionDetailModal> {
               )
             else
               Text(
-                widget.transaction.description ??
-                    'No detailed information provided for this log entry.',
+                widget.transaction.description != null
+                    ? widget.transaction.descriptionWithTime
+                    : 'No detailed information provided for this log entry.',
                 style: AppTextStyles.body,
               ),
             const SizedBox(height: 32),

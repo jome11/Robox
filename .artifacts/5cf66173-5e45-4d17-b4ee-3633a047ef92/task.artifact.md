@@ -1,3 +1,3 @@
-- [ ] Upgrade Gradle version in `gradle-wrapper.properties`
-- [ ] Upgrade AGP and Kotlin versions in `settings.gradle.kts`
-- [ ] Upgrade `compileSdk` and `targetSdk` in `app/build.gradle.kts`
+- [x] Upgrade Gradle version in `gradle-wrapper.properties`
+- [x] Upgrade AGP and Kotlin versions in `settings.gradle.kts`
+- [x] Upgrade `compileSdk` and `targetSdk` in `app/build.gradle.kts`

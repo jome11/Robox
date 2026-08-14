@@ -29,10 +29,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final FinanceRepository _financeRepository = FinanceRepositoryImpl();
 
   List<TaskModel> _tasks = [];
+  List<TransactionModel> _allTransactions = [];
   List<FinancialRecord> _financialData = [];
   int _workerCount = 0;
   bool _isLoading = true;
   String? _error;
+
+  ChartViewMode _viewMode = ChartViewMode.monthly;
+  int _selectedYear = DateTime.now().year;
+  int _selectedMonth = DateTime.now().month;
 
   @override
   void initState() {
@@ -60,15 +65,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       setState(() {
         _tasks = results[0] as List<TaskModel>;
         _workerCount = (results[1] as List<Map<String, String>>).length;
-        _financialData = DashboardDataHelper.financialRecordsFromTransactions(transactions);
+        _allTransactions = transactions;
         _isLoading = false;
       });
+      _updateChartData();
     } catch (_) {
       setState(() {
         _error = 'Could not load dashboard data. Check your connection.';
         _isLoading = false;
       });
     }
+  }
+
+  /// Recomputes the chart bars from already-fetched transactions —
+  /// no network call needed when switching view mode, month, or year.
+  void _updateChartData() {
+    setState(() {
+      _financialData = _viewMode == ChartViewMode.monthly
+          ? DashboardDataHelper.monthlyRecordsForYear(_allTransactions, _selectedYear)
+          : DashboardDataHelper.weeklyRecordsForMonth(_allTransactions, _selectedYear, _selectedMonth);
+    });
   }
 
   @override
@@ -180,6 +196,51 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       _LegendItem(label: 'Expense', color: AppColors.error),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _ChartDropdown<ChartViewMode>(
+                        value: _viewMode,
+                        items: const {
+                          ChartViewMode.monthly: 'Monthly',
+                          ChartViewMode.weekly: 'Weekly',
+                        },
+                        onChanged: (mode) {
+                          if (mode == null) return;
+                          setState(() => _viewMode = mode);
+                          _updateChartData();
+                        },
+                      ),
+                      if (_viewMode == ChartViewMode.weekly)
+                        _ChartDropdown<int>(
+                          value: _selectedMonth,
+                          items: {
+                            for (var m = 1; m <= 12; m++)
+                              m: DashboardDataHelper.monthName(m),
+                          },
+                          onChanged: (month) {
+                            if (month == null) return;
+                            setState(() => _selectedMonth = month);
+                            _updateChartData();
+                          },
+                        ),
+                      _ChartDropdown<int>(
+                        value: _selectedYear,
+                        items: {
+                          for (var y = DateTime.now().year; y >= DateTime.now().year - 4; y--)
+                            y: '$y',
+                        },
+                        onChanged: (year) {
+                          if (year == null) return;
+                          setState(() => _selectedYear = year);
+                          _updateChartData();
+                        },
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -275,6 +336,43 @@ class _LegendItem extends StatelessWidget {
         const SizedBox(width: 4),
         Text(label, style: AppTextStyles.label.copyWith(fontSize: 10)),
       ],
+    );
+  }
+}
+
+/// Small bordered dropdown used for the chart's view mode / month / year
+/// pickers. Generic over T so it works for both ChartViewMode and int.
+class _ChartDropdown<T> extends StatelessWidget {
+  final T value;
+  final Map<T, String> items;
+  final ValueChanged<T?> onChanged;
+
+  const _ChartDropdown({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          dropdownColor: AppColors.surface,
+          style: AppTextStyles.body,
+          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.textMuted, size: 18),
+          items: items.entries
+              .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
     );
   }
 }

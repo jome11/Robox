@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/robox_button.dart';
-import '../../../../core/widgets/income_category_dropdown.dart';
+import '../../../../core/widgets/category_checklist.dart';
+import '../../../../core/widgets/payment_method_picker.dart';
 import '../../../../data/models/transaction_model.dart';
 import '../../../../data/repositories/finance_repository.dart';
 
@@ -18,8 +19,9 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
   final FinanceRepository _financeRepository = FinanceRepositoryImpl();
 
   TransactionType _type = TransactionType.income;
-  IncomeCategory? _category;
-  String? _subCategory;
+  Set<IncomeCategory> _categories = {};
+  PaymentMethod? _paymentMethod;
+  Set<String> _subCategories = {};
   final _customCategoryController = TextEditingController();
   final _amountController = TextEditingController();
   final _quantityController = TextEditingController();
@@ -66,21 +68,41 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
 
   Future<void> _logEntry() async {
     final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount <= 0) return;
-    if (_type == TransactionType.income && _category == null) return;
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid amount.')),
+      );
+      return;
+    }
+    if (_type == TransactionType.income && _categories.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one category.')),
+      );
+      return;
+    }
+    if (_paymentMethod == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a payment method.')),
+      );
+      return;
+    }
 
     final quantity = int.tryParse(_quantityController.text);
+    final categoryList = _categories.toList();
 
     setState(() => _isSubmitting = true);
 
     try {
       await _financeRepository.createTransaction(
-        title: _type == TransactionType.income ? (_category?.label ?? 'Income') : 'Expense',
+        title: _type == TransactionType.income
+            ? (categoryList.isNotEmpty ? categoryList.map((c) => c.label).join(', ') : 'Income')
+            : 'Expense',
         amount: amount,
         type: _type,
-        category: _type == TransactionType.income ? _category : null,
-        subCategory: _subCategory,
-        customCategory: _category == IncomeCategory.other ? _customCategoryController.text : null,
+        paymentMethod: _paymentMethod!,
+        categories: _type == TransactionType.income ? categoryList : const [],
+        subCategories: _subCategories.toList(),
+        customCategory: _categories.contains(IncomeCategory.other) ? _customCategoryController.text : null,
         quantity: quantity,
         description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
       );
@@ -90,8 +112,9 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
       _descriptionController.clear();
       _customCategoryController.clear();
       setState(() {
-        _category = null;
-        _subCategory = null;
+        _categories = {};
+        _subCategories = {};
+        _paymentMethod = null;
       });
 
       await _loadTransactions();
@@ -118,9 +141,10 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
             amount: amount ?? t.amount,
             type: t.type,
             date: t.date,
-            category: t.category,
-            subCategory: t.subCategory,
+            categories: t.categories,
+            subCategories: t.subCategories,
             customCategory: t.customCategory,
+            paymentMethod: t.paymentMethod,
             quantity: t.quantity,
             edited: true,
             description: description ?? t.description,
@@ -338,18 +362,18 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
               const SizedBox(height: 16),
 
               if (_type == TransactionType.income) ...[
-                IncomeCategoryDropdown(
-                  selected: _category,
-                  selectedSub: _subCategory,
+                CategoryChecklist(
+                  selected: _categories,
+                  selectedSubs: _subCategories,
                   customController: _customCategoryController,
                   onChanged: (c) => setState(() {
-                    _category = c;
-                    _subCategory = null;
+                    _categories = c;
                   }),
-                  onSubChanged: (s) => setState(() => _subCategory = s),
+                  onSubsChanged: (s) => setState(() => _subCategories = s),
                 ),
                 const SizedBox(height: 16),
-                if (_category == IncomeCategory.threeDMachineSale || _category == IncomeCategory.filament) ...[
+                if (_categories.contains(IncomeCategory.threeDMachineSale) ||
+                    _categories.contains(IncomeCategory.filament)) ...[
                   Text('QUANTITY SOLD', style: AppTextStyles.label),
                   const SizedBox(height: 8),
                   _StyledField(
@@ -360,6 +384,12 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
                   const SizedBox(height: 16),
                 ],
               ],
+
+              PaymentMethodPicker(
+                selected: _paymentMethod,
+                onChanged: (m) => setState(() => _paymentMethod = m),
+              ),
+              const SizedBox(height: 16),
 
               Text('AMOUNT (ETB)', style: AppTextStyles.label),
               const SizedBox(height: 8),
