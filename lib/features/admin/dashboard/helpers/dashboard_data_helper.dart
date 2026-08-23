@@ -43,20 +43,23 @@ class DashboardDataHelper {
     });
   }
 
-  /// One bar per week within [month] of [year]. Weeks are simple 7-day
-  /// chunks starting on the 1st (Week 1 = days 1-7, Week 2 = 8-14, etc.),
-  /// so the last week of the month may be shorter than 7 days.
+  /// One bar per week within [month] of [year], always exactly 4 weeks.
+  /// Weeks are simple 7-day chunks starting on the 1st (Week 1 = days 1-7,
+  /// Week 2 = 8-14, Week 3 = 15-21), and Week 4 absorbs every remaining day
+  /// of the month (22 through the end), so a 29-31 day month doesn't spill
+  /// into a near-empty 5th bar — those extra days' transactions are still
+  /// counted, just folded into Week 4.
   static List<FinancialRecord> weeklyRecordsForMonth(
       List<TransactionModel> transactions,
       int year,
       int month,
       ) {
     final daysInMonth = DateTime(year, month + 1, 0).day;
-    final weekCount = (daysInMonth / 7).ceil();
+    const weekCount = 4;
 
     return List.generate(weekCount, (i) {
       final startDay = i * 7 + 1;
-      final endDay = ((i + 1) * 7).clamp(0, daysInMonth);
+      final endDay = i == weekCount - 1 ? daysInMonth : (i + 1) * 7;
 
       final weekTransactions = transactions.where((t) =>
       t.date.year == year &&

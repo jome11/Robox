@@ -39,6 +39,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _selectedYear = DateTime.now().year;
   int _selectedMonth = DateTime.now().month;
 
+  String? _insight;
+  bool _isGeneratingInsight = false;
+  String? _insightError;
+
+  Future<void> _generateInsight() async {
+    setState(() {
+      _isGeneratingInsight = true;
+      _insightError = null;
+    });
+    try {
+      final insight = await _adminRepository.getFinancialInsight();
+      setState(() {
+        _insight = insight;
+        _isGeneratingInsight = false;
+      });
+    } catch (_) {
+      setState(() {
+        _insightError = 'Could not generate insight right now. Please try again.';
+        _isGeneratingInsight = false;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -252,6 +275,43 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     child: SizedBox(
                       height: 200,
                       child: FinancialComparisonChart(data: _financialData),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  Text('AI INSIGHTS', style: AppTextStyles.label),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_isGeneratingInsight)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else if (_insightError != null)
+                          Text(_insightError!, style: AppTextStyles.body.copyWith(color: AppColors.error))
+                        else if (_insight != null)
+                            Text(_insight!, style: AppTextStyles.body)
+                          else
+                            Text(
+                              'Tap below to get a plain-language summary of this month\'s income and expenses.',
+                              style: AppTextStyles.body.copyWith(color: AppColors.textMuted),
+                            ),
+                        const SizedBox(height: 12),
+                        RoboxButton(
+                          label: _insight == null ? 'Generate Insights' : 'Refresh Insights',
+                          onPressed: _isGeneratingInsight ? null : _generateInsight,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),

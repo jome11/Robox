@@ -333,6 +333,13 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final totalIncome = _transactions
+        .where((t) => t.type == TransactionType.income)
+        .fold<double>(0, (sum, t) => sum + t.amount);
+    final totalExpense = _transactions
+        .where((t) => t.type == TransactionType.expense)
+        .fold<double>(0, (sum, t) => sum + t.amount);
+
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _loadTransactions,
@@ -344,6 +351,28 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
             children: [
               Text('Finance', style: AppTextStyles.headline),
               const SizedBox(height: 20),
+              if (!_isLoading && _error == null) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: _TotalSummaryCard(
+                        label: 'TOTAL INCOME',
+                        amount: totalIncome,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _TotalSummaryCard(
+                        label: 'TOTAL EXPENSE',
+                        amount: totalExpense,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
               Row(
                 children: [
                   Expanded(child: _TypeToggleButton(
@@ -440,6 +469,37 @@ class _WorkerFinanceScreenState extends State<WorkerFinanceScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TotalSummaryCard extends StatelessWidget {
+  final String label;
+  final double amount;
+  final Color color;
+
+  const _TotalSummaryCard({required this.label, required this.amount, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: AppTextStyles.label.copyWith(color: AppColors.textMuted)),
+          const SizedBox(height: 4),
+          Text(
+            'ETB ${amount.toStringAsFixed(2)}',
+            style: AppTextStyles.body.copyWith(color: color, fontWeight: FontWeight.w700),
+          ),
+        ],
       ),
     );
   }

@@ -11,6 +11,7 @@ abstract class AdminRepository {
   Future<List<Map<String, String>>> getWorkers();
   Future<String> resetWorkerPassword(String workerId);
   Future<void> deactivateWorker(String workerId);
+  Future<String> getFinancialInsight();
 }
 
 class AdminRepositoryImpl implements AdminRepository {
@@ -29,7 +30,7 @@ class AdminRepositoryImpl implements AdminRepository {
     final headers = await _authHeaders();
     final url = Uri.parse('${ApiConstants.baseUrl}/admin/pending-requests');
     print('ADMIN_LOG: Fetching pending requests from: $url');
-    
+
     final response = await http.get(url, headers: headers);
 
     print('ADMIN_LOG: Pending Requests Status: ${response.statusCode}');
@@ -121,5 +122,26 @@ class AdminRepositoryImpl implements AdminRepository {
     if (response.statusCode != 200) {
       throw Exception('DEACTIVATE_FAILED');
     }
+  }
+
+  /// Calls the backend, which asks Gemini for a short plain-language
+  /// summary based on aggregated income/expense totals — no raw
+  /// transaction data leaves the backend. Call this on-demand (e.g. a
+  /// "Generate Insights" button), not on every dashboard load, to stay
+  /// within the Gemini free tier's rate limits.
+  @override
+  Future<String> getFinancialInsight() async {
+    final headers = await _authHeaders();
+    final response = await http.get(
+      Uri.parse('${ApiConstants.baseUrl}/admin/insights'),
+      headers: headers,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('INSIGHT_GENERATION_FAILED');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return data['insight'] as String;
   }
 }
