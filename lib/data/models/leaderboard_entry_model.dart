@@ -2,14 +2,14 @@ class LeaderboardEntryModel {
   final String userId;
   final String userName;
   final int rank;
-  final double efficiency;
+  final double totalIncome;
   final int tasksCompleted;
 
   const LeaderboardEntryModel({
     required this.userId,
     required this.userName,
     required this.rank,
-    required this.efficiency,
+    required this.totalIncome,
     required this.tasksCompleted,
   });
 
@@ -18,7 +18,7 @@ class LeaderboardEntryModel {
       userId: json['userId'].toString(),
       userName: json['userName']?.toString() ?? 'Unknown',
       rank: json['rank'] as int,
-      efficiency: (json['efficiency'] as num).toDouble(),
+      totalIncome: (json['totalIncome'] as num).toDouble(),
       tasksCompleted: json['tasksCompleted'] as int,
     );
   }

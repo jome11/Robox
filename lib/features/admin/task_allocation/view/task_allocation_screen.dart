@@ -183,6 +183,18 @@ class _TaskList extends StatelessWidget {
                     '${(task.progress * 100).toInt()}%',
                     style: AppTextStyles.label.copyWith(fontSize: 10),
                   ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: () => context.push('/chat/${task.id}', extra: task.title),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withAlpha(30),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.primary),
+                    ),
+                  ),
                 ],
               ),
             ],

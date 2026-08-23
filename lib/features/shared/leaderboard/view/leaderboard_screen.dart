@@ -66,7 +66,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             children: [
               Text('Team Rankings', style: AppTextStyles.headline),
               const SizedBox(height: 4),
-              Text('Tasks completed · this month',
+              Text('Income logged · this month',
                   style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
               const SizedBox(height: 20),
               if (_isLoading)
@@ -88,140 +88,140 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   ),
                 )
               else if (_entries.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: Center(
-                    child: Text('No rankings available yet.',
-                        style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
-                  ),
-                )
-              else ...[
-                Container(
-                  padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: SizedBox(
-                    height: 160,
-                    child: BarChart(
-                      BarChartData(
-                        gridData: const FlGridData(show: false),
-                        borderData: FlBorderData(show: false),
-                        titlesData: FlTitlesData(
-                          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, meta) {
-                                final i = value.toInt();
-                                if (i < 0 || i >= _entries.length) return const SizedBox.shrink();
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 6),
-                                  child: Text(_entries[i].userName.split(' ').first,
-                                      style: AppTextStyles.label),
-                                );
-                              },
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Text('No rankings available yet.',
+                          style: AppTextStyles.body.copyWith(color: AppColors.textMuted)),
+                    ),
+                  )
+                else ...[
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: SizedBox(
+                        height: 160,
+                        child: BarChart(
+                          BarChartData(
+                            gridData: const FlGridData(show: false),
+                            borderData: FlBorderData(show: false),
+                            titlesData: FlTitlesData(
+                              leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, meta) {
+                                    final i = value.toInt();
+                                    if (i < 0 || i >= _entries.length) return const SizedBox.shrink();
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: Text(_entries[i].userName.split(' ').first,
+                                          style: AppTextStyles.label),
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
+                            barGroups: List.generate(_entries.length, (i) {
+                              final entry = _entries[i];
+                              return BarChartGroupData(x: i, barRods: [
+                                BarChartRodData(
+                                  toY: entry.totalIncome,
+                                  color: entry.userId == currentUserId
+                                      ? AppColors.primary
+                                      : AppColors.secondary,
+                                  width: 18,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ]);
+                            }),
                           ),
                         ),
-                        barGroups: List.generate(_entries.length, (i) {
-                          final entry = _entries[i];
-                          return BarChartGroupData(x: i, barRods: [
-                            BarChartRodData(
-                              toY: entry.tasksCompleted.toDouble(),
-                              color: entry.userId == currentUserId
-                                  ? AppColors.primary
-                                  : AppColors.secondary,
-                              width: 18,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ]);
-                        }),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ...List.generate(_entries.length, (index) {
-                  final entry = _entries[index];
-                  final isYou = entry.userId == currentUserId;
-                  final initials = entry.userName
-                      .split(' ')
-                      .where((s) => s.isNotEmpty)
-                      .map((p) => p[0])
-                      .take(2)
-                      .join();
+                    const SizedBox(height: 20),
+                    ...List.generate(_entries.length, (index) {
+                      final entry = _entries[index];
+                      final isYou = entry.userId == currentUserId;
+                      final initials = entry.userName
+                          .split(' ')
+                          .where((s) => s.isNotEmpty)
+                          .map((p) => p[0])
+                          .take(2)
+                          .join();
 
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isYou
-                          ? AppColors.primary.withAlpha((0.1 * 255).toInt())
-                          : AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: isYou ? AppColors.primary : AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 28,
-                          child: index < 3
-                              ? Text(_medals[index], style: const TextStyle(fontSize: 18))
-                              : Text('#${entry.rank}',
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isYou
+                              ? AppColors.primary.withAlpha((0.1 * 255).toInt())
+                              : AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: isYou ? AppColors.primary : AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 28,
+                              child: index < 3
+                                  ? Text(_medals[index], style: const TextStyle(fontSize: 18))
+                                  : Text('#${entry.rank}',
                                   style: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold)),
-                        ),
-                        const SizedBox(width: 8),
-                        CircleAvatar(
-                          radius: 18,
-                          backgroundColor: AppColors.secondary,
-                          child: Text(initials,
-                              style: AppTextStyles.body.copyWith(
-                                  color: AppColors.onSecondary, fontWeight: FontWeight.w600)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                            ),
+                            const SizedBox(width: 8),
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: AppColors.secondary,
+                              child: Text(initials,
+                                  style: AppTextStyles.body.copyWith(
+                                      color: AppColors.onSecondary, fontWeight: FontWeight.w600)),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Flexible(
-                                    child: Text(
-                                      entry.userName,
-                                      style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          entry.userName,
+                                          style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (isYou) ...[
+                                        const SizedBox(width: 6),
+                                        Text('YOU',
+                                            style: AppTextStyles.label.copyWith(color: AppColors.primary)),
+                                      ],
+                                    ],
                                   ),
-                                  if (isYou) ...[
-                                    const SizedBox(width: 6),
-                                    Text('YOU',
-                                        style: AppTextStyles.label.copyWith(color: AppColors.primary)),
-                                  ],
+                                  Text('${entry.tasksCompleted} tasks completed',
+                                      style: AppTextStyles.label),
                                 ],
                               ),
-                              Text('${entry.efficiency.toStringAsFixed(0)}% efficiency',
-                                  style: AppTextStyles.label),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text('${entry.tasksCompleted}',
-                                style: AppTextStyles.headline.copyWith(fontSize: 18)),
-                            Text('TASKS', style: AppTextStyles.label),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(entry.totalIncome.toStringAsFixed(0),
+                                    style: AppTextStyles.headline.copyWith(fontSize: 18)),
+                                Text('ETB LOGGED', style: AppTextStyles.label),
+                              ],
+                            ),
                           ],
                         ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
+                      );
+                    }),
+                  ],
             ],
           ),
         ),
